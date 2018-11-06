@@ -1,4 +1,5 @@
 import java.io.IOException;
+import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -7,6 +8,7 @@ public class Frame {
 	Packet thePack;
 	DatagramSocket theSocket;
 	Timer timeoutTimer;
+	DatagramPacket theDataPack;
 	
 	public Frame(Packet thePack, DatagramSocket theSocket) {
 		this.thePack = thePack;
@@ -15,12 +17,13 @@ public class Frame {
 	
 	public void send() {
 		try {
-			theSocket.send(thePack.toDatagramPacket());
-			timeoutTimer = new Timer();
-			timeoutTimer.schedule(new TimerTask() {
+			theDataPack = thePack.toDatagramPacket();//packet -> datagramPacket
+			theSocket.send(theDataPack);//send it! (for reals tho)
+			timeoutTimer = new Timer();//start timeout timer
+			timeoutTimer.schedule(new TimerTask() {//tell the timer what to do
 				public void run() {
-					timeoutTimer.cancel();
-					send();
+					timeoutTimer.cancel();//cancel existing timer
+					send();//resend
 				}
 			}, 7000);// Resend in 7 seconds
 		} catch (IOException e) {
@@ -28,12 +31,12 @@ public class Frame {
 		}
 	}
 	
-	public void resend() {
+	public void resend() {//resend a packer
 		timeoutTimer.cancel();
 		send();
 	}
 	
-	public void cancel() {
+	public void cancel() {//don't resend a packet
 		timeoutTimer.cancel();
 	}
 }
