@@ -10,7 +10,7 @@ public class Sender {
 	public boolean sendData(String data, String dstNode,int dstPort) {
 		String[] stringsToSend = splitStr(data);
 		for(int i = 0; i < stringsToSend.length; i++) {
-//			sendPacket(new Packet())
+			sendPacket(new Packet(Packet.DATA, (byte)i, (byte)stringsToSend.length, stringsToSend[i]));
 		}
 		return false;
 	}
