@@ -1,9 +1,9 @@
-import java.io.ByteArrayOutputStream;
 import java.net.DatagramPacket;
 import java.util.Arrays;
 
 public class Packet {
-	public static final int MAX_LENGTH = 65536;//Max num. of bits (2 bytes -> short)
+	public static final int MAX_LENGTH_BITS = 65536;//Max num. of bits (2 bytes -> short)
+	public static final int MAX_LENGTH_BYTES = MAX_LENGTH_BITS / 8;
 	
 	public static final byte ACK = 0;
 	public static final byte NAK = 1;
@@ -15,6 +15,8 @@ public class Packet {
 	public byte seqNum;
 	public byte seqTotal;
 	public String content;
+	
+	private static final int NUM_OF_ADDITIONAL_BYTES = 3;
 
 	public Packet(byte type, byte sequNum, byte sequTotal, String data) {
 		packType = type;// 1 byte to identify packet type
@@ -27,19 +29,16 @@ public class Packet {
 
 	public DatagramPacket toDatagramPacket() {
 		DatagramPacket thePacket = null;
-
-		ByteArrayOutputStream bOutStream = new ByteArrayOutputStream();// to read non-obj
-
-		bOutStream.write(packType);// write the packet type
-		bOutStream.write(seqNum);// write the sequence number
-		bOutStream.write(seqTotal);// write the sequence total
-		char[] contentChars = content.toCharArray();// convert string to char array
-		for (char theChar : contentChars)// write the contents
-			bOutStream.write(theChar);
-
-		byte[] data = bOutStream.toByteArray(); //convert data to byte array
+		
+		byte[] contentChars = content.getBytes();// convert string to byte array
+		byte[] data = new byte[contentChars.length + NUM_OF_ADDITIONAL_BYTES];
+		for (int i = 0; i < contentChars.length; i++) // write the contents
+			data[i+ NUM_OF_ADDITIONAL_BYTES] = contentChars[i];
+		data[0] = packType;
+		data[1] = seqNum;
+		data[2] = seqTotal;		
 		thePacket = new DatagramPacket(data, data.length);
-
+		
 		return thePacket;
 	}
 	
