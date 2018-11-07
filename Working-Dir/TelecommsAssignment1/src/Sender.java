@@ -4,6 +4,7 @@ import java.net.SocketException;
 import java.util.Arrays;
 
 public class Sender extends Thread {
+	public static final byte STRT_NUM = -1;
 	public static final int DEF_WINDOW_WIDTH = 5;// window
 	private final int WINDOW_MAX = (DEF_WINDOW_WIDTH * 2);// whole range
 	int srcPort; // where packets are sent from
@@ -12,6 +13,9 @@ public class Sender extends Thread {
 	String tgtName;// target name
 	InetSocketAddress tgtAddr;// target address
 	public Frame[] frameArray = new Frame[WINDOW_MAX];// array of active frames
+	private String data;
+	
+	private Frame endF;
 
 	public Sender(String tgtName, int tgtPort, int srcPort) {
 		try {
@@ -27,7 +31,53 @@ public class Sender extends Thread {
 
 	private int activeFrames = 0;// number of frames currently active
 
-	public boolean sendData(String data, String dstNode, int dstPort, int srcPort) {
+	public void sendData(String data) {
+		this.data = data;
+		run();
+	}
+	
+	public void sendACK(byte packetNum) {
+		Frame theFrame = new Frame(new Packet(tgtAddr, Packet.ACK, packetNum), srcSocket);
+		theFrame.send();
+		theFrame.cancel();//Don't wait for ACK 
+	}
+	
+	public void sendNAK(byte packetNum) {
+		Frame theFrame = new Frame(new Packet(tgtAddr, Packet.NAK, packetNum), srcSocket);
+		theFrame.send();
+		theFrame.cancel();
+	}
+	
+	public void sendSTRT() {
+		Frame theFrame = new Frame(new Packet(tgtAddr, Packet.STRT, STRT_NUM), srcSocket);
+		theFrame.send();
+		theFrame.cancel();
+	}
+	
+	public void sendSTRT_ACK() {
+		Frame theFrame = new Frame(new Packet(tgtAddr, Packet.STRT_ACK, STRT_NUM), srcSocket);
+		theFrame.send();
+		theFrame.cancel();
+	}
+	
+	public void sendEND(byte lastPack) {
+		Frame theFrame = new Frame(new Packet(tgtAddr, Packet.END, lastPack), srcSocket);
+		theFrame.send();
+		theFrame.cancel();
+	}
+	
+	public void sendEND_ACK() {
+		Frame theFrame = new Frame(new Packet(tgtAddr, Packet.END_ACK, STRT_NUM), srcSocket);
+		theFrame.send();
+		theFrame.cancel();
+	}
+	
+	public void endEND() {
+		this.endF.cancel();
+		this.endF = null;
+	}
+	
+	private void sendData() {
 		byte[][] stringsToSend = splitStr(data);// split the string into a series of strings
 		int packetsToSend = stringsToSend.length; // number of packets to send
 		byte pacNum = 0;
@@ -41,7 +91,15 @@ public class Sender extends Thread {
 				packetsSent++;// ^^
 			}
 		}
-		return false;
+		if(pacNum == 0)
+			pacNum = WINDOW_MAX;
+		else
+			pacNum--;
+		sendEND(pacNum);
+	}
+	
+	public void run() {
+		sendData();
 	}
 
 	private void sendPacket(Packet thePack) {// send a packet

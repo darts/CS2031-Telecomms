@@ -9,6 +9,7 @@ public class Frame {
 	DatagramSocket theSocket;
 	Timer timeoutTimer;
 	DatagramPacket theDataPack;
+	public static final int TIMEOUT_DELAY = 3000;
 	
 	public Frame(Packet thePack, DatagramSocket theSocket) {
 		this.thePack = thePack;
@@ -25,7 +26,7 @@ public class Frame {
 					timeoutTimer.cancel();//cancel existing timer
 					send();//resend
 				}
-			}, 7000);// Resend in 7 seconds
+			}, 3000);// Resend in 7 seconds
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

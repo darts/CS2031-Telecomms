@@ -48,6 +48,13 @@ public class Packet {
 		if (contentArr == null) // more null-pointer avoidance
 			contentArr = new byte[0];
 	}
+	
+	public Packet(InetSocketAddress targetAddr,byte type, byte sequNum) {
+		this.targetAddr = targetAddr;
+		packType = type;// 1 byte to identify packet type
+		seqNum = sequNum;// 1 byte to identify sequence number
+		contentArr = new byte[0];
+	}
 
 	// convert to a datagramPacket and set socket addr.
 	public DatagramPacket toDatagramPacket() {
