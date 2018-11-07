@@ -6,7 +6,7 @@ import java.util.Arrays;
 public class Sender extends Thread {
 	public static final byte STRT_NUM = -1;
 	public static final int DEF_WINDOW_WIDTH = 5;// window
-	private final int WINDOW_MAX = (DEF_WINDOW_WIDTH * 2);// whole range
+	public static final int WINDOW_MAX = (DEF_WINDOW_WIDTH * 2);// whole range
 	int srcPort; // where packets are sent from
 	DatagramSocket srcSocket; // ^^
 	int tgtPort;// target port
@@ -16,6 +16,7 @@ public class Sender extends Thread {
 	private String data;
 	
 	private Frame endF;
+	private Frame strtF;
 
 	public Sender(String tgtName, int tgtPort, int srcPort) {
 		try {
@@ -49,9 +50,8 @@ public class Sender extends Thread {
 	}
 	
 	public void sendSTRT() {
-		Frame theFrame = new Frame(new Packet(tgtAddr, Packet.STRT, STRT_NUM), srcSocket);
-		theFrame.send();
-		theFrame.cancel();
+		strtF = new Frame(new Packet(tgtAddr, Packet.STRT, STRT_NUM), srcSocket);
+		strtF.send();
 	}
 	
 	public void sendSTRT_ACK() {
@@ -61,9 +61,8 @@ public class Sender extends Thread {
 	}
 	
 	public void sendEND(byte lastPack) {
-		Frame theFrame = new Frame(new Packet(tgtAddr, Packet.END, lastPack), srcSocket);
-		theFrame.send();
-		theFrame.cancel();
+		endF = new Frame(new Packet(tgtAddr, Packet.END, lastPack), srcSocket);
+		endF.send();
 	}
 	
 	public void sendEND_ACK() {
@@ -76,6 +75,12 @@ public class Sender extends Thread {
 		this.endF.cancel();
 		this.endF = null;
 	}
+	
+	public void endSTRT() {
+		this.strtF.cancel();
+		this.strtF = null;
+	}
+	
 	
 	private void sendData() {
 		byte[][] stringsToSend = splitStr(data);// split the string into a series of strings

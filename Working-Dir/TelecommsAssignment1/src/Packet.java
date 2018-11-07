@@ -87,9 +87,9 @@ public class Packet {
 
 	//get the contents from a byte[]
 	public static String getContents(byte[] data) {
-		byte[] contentArray = new byte[data.length - 3];
+		byte[] contentArray = new byte[data.length - NUM_OF_ADDITIONAL_BYTES];
 		for (int i = 0; i < contentArray.length; i++)
-			contentArray[i] = data[i + 3];
+			contentArray[i] = data[i + NUM_OF_ADDITIONAL_BYTES];
 		String content = new String(contentArray, DEF_ENCODING);
 		return content;
 	}
