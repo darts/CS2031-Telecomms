@@ -117,4 +117,8 @@ public class Packet {
 	private Packet(byte type, byte sequNum, String data) {
 		this(null, type, sequNum, data);
 	}
+	
+	public static byte getTopic(byte[] data) {
+		return data[NUM_OF_ADDITIONAL_BYTES];
+	}
 }

@@ -2,7 +2,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
 
-public class CommPoint extends Listener implements ReceiverInterface{
+public class CommPoint extends Listener implements ReceiverInterface {
 	private Sender theSender;
 	private DatagramSocket socket;
 	private boolean dataToSendBool = false;
@@ -13,7 +13,8 @@ public class CommPoint extends Listener implements ReceiverInterface{
 	private byte windowMin;
 	private byte windowMax;
 	private boolean windowValid;
-	
+	private byte topic;
+
 	public CommPoint(String tgtName, int tgtPort, int srcPort) {
 		try {
 			this.socket = new DatagramSocket(srcPort);
@@ -23,48 +24,60 @@ public class CommPoint extends Listener implements ReceiverInterface{
 		}
 		theSender = new Sender(tgtName, tgtPort, srcPort);
 	}
-	
-	public void startDataTransmission(String theData) {
+
+	public void startDataTransmission(String theData, byte type) {
 		dataToSend = theData;
 		dataToSendBool = true;
-		theSender.sendSTRT();
+		byte[] theType = {type};
+		theSender.sendSTRT(theType);
 	}
 
 	@Override
 	public void packetRecieved(DatagramPacket thePacket) {
 		byte type = Packet.getType(thePacket);
-		switch(type) {
-		case Packet.ACK: this.ACKReceived();
-		break;
-		case Packet.NAK: this.NAKReceived();
-		break;
-		case Packet.DATA: this.DATAReceived(thePacket.getData());
-		break;
-		case Packet.SUB: this.SUBReceived();
-		break;
-		case Packet.USUB: this.USUBReceived();
-		break;
-		case Packet.STRT: this.STRTReceived();
-		break;
-		case Packet.STRT_ACK: this.STRT_ACKReceived();
-		break;
-		case Packet.END: this.ENDReceived();
-		break;
-		case Packet.END_ACK: this.END_ACKReceived();
+		switch (type) {
+		case Packet.ACK:
+			this.ACKReceived(Packet.getSeqNum(thePacket.getData()));
+			break;
+		case Packet.NAK:
+			this.NAKReceived(Packet.getSeqNum(thePacket.getData()));
+			break;
+		case Packet.DATA:
+			this.DATAReceived(thePacket.getData());
+			break;
+		case Packet.SUB:
+			this.SUBReceived();
+			break;
+		case Packet.USUB:
+			this.USUBReceived();
+			break;
+		case Packet.STRT:
+			this.STRTReceived(thePacket.getData());
+			break;
+		case Packet.STRT_ACK:
+			this.STRT_ACKReceived();
+			break;
+		case Packet.END:
+			this.ENDReceived(thePacket.getData());
+			break;
+		case Packet.END_ACK:
+			this.END_ACKReceived();
 		}
 	}
 
-	public void ACKReceived() {
-		// TODO Auto-generated method stub
-		
+	public void ACKReceived(byte seqNum) {
+		theSender.ackRecieved(seqNum);
+		System.out.println("ACK Received: " + seqNum);
 	}
 
-	public void NAKReceived() {
-		// TODO Auto-generated method stub
-		
+	public void NAKReceived(byte seqNum) {
+		theSender.nakRecieved(seqNum);
+		System.out.println("NAK Received: " + seqNum + "   Resending...");
 	}
 
-	public void STRTReceived() {
+	public void STRTReceived(byte[] data) {
+		this.topic = Packet.getTopic(data);
+		System.out.println("STRT Received Topic: " + UserInterface.parseTopic(topic) + "   Sending STRT_ACK");
 		theSender.sendSTRT_ACK();
 		this.dataReceived = "";
 		this.window = new String[Sender.WINDOW_MAX];
@@ -74,54 +87,75 @@ public class CommPoint extends Listener implements ReceiverInterface{
 	}
 
 	public void STRT_ACKReceived() {
+		System.out.println("STRT_ACK Received     Beginning comms...");
 		theSender.endSTRT();
-		if(dataToSendBool)
+		if (dataToSendBool)
 			theSender.sendData(dataToSend);
 	}
 
-	public void ENDReceived() {
-		// TODO Auto-generated method stub
-		
+	public void ENDReceived(byte[] data) {
+		if(!nakMissingPackets(Packet.getSeqNum(data))) {//all packets accounted for
+			theSender.sendEND_ACK();
+			System.out.println("END Received      Sending END_ACK");
+		}
 	}
 
 	public void END_ACKReceived() {
-		// TODO Auto-generated method stub
-		
+		theSender.endEND();
+		System.out.println("END_ACK Received      Connection Closed");
 	}
 
 	public void DATAReceived(byte[] data) {
-		this.dataReceived += Packet.getContents(data);
+		handleWindow(data);
+		
 	}
 
 	public void SUBReceived() {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	public void USUBReceived() {
 		// TODO Auto-generated method stub
-		
+
 	}
-	
+
 	private void handleWindow(byte[] data) {
 		byte seqNum = Packet.getSeqNum(data);
-		if(seqNum < windowMax && seqNum > windowMin) {//packet is in window range
-			if(seqNum == windowMin) {//Packet is as anticipated
+		if (seqNum < windowMax && seqNum > windowMin) {// packet is in window range
+			if (seqNum == windowMin) {// Packet is as anticipated
+				theSender.sendACK(seqNum);
 				dataReceived += Packet.getContents(data);
 				windowMax++;
 				windowMin++;
-			}else {
+				flushWindow(seqNum);
+				System.out.println("DATA Received      Sending ACK");
+			} else {
 				window[seqNum] = Packet.getContents(data);
-				nakMissingPackets(seqNum); //nak absent packets
+				nakMissingPackets(seqNum); // nak absent packets
+				System.out.println("DATA Received   OUT OF ORDER!!  Sending NAK");
 			}
 		}
 	}
-	
-	private void nakMissingPackets(byte seqNum) {
-		for(byte i = seqNum; i >= windowMin; i--) {//resend missing packets
-			if(window[i] == null)
+
+	private boolean nakMissingPackets(byte seqNum) {
+		boolean retBool = false;
+		for (byte i = seqNum; i >= windowMin; i--) {// resend missing packets
+			if (window[i] == null) {
 				theSender.sendNAK(i);
+				retBool = true;
+			}
 		}
+		return retBool;
 	}
 	
+	private void flushWindow(byte seqNum) {//remove any packets in the window
+		int i = windowMin;
+		String content = window[i];
+		while(content != null && i < windowMax) {
+			dataReceived += content;
+			window[i++] = null;
+			theSender.sendACK(seqNum);
+		}
+	}
 }

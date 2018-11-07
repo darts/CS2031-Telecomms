@@ -14,7 +14,7 @@ public class Sender extends Thread {
 	InetSocketAddress tgtAddr;// target address
 	public Frame[] frameArray = new Frame[WINDOW_MAX];// array of active frames
 	private String data;
-	
+
 	private Frame endF;
 	private Frame strtF;
 
@@ -36,52 +36,51 @@ public class Sender extends Thread {
 		this.data = data;
 		run();
 	}
-	
+
 	public void sendACK(byte packetNum) {
 		Frame theFrame = new Frame(new Packet(tgtAddr, Packet.ACK, packetNum), srcSocket);
 		theFrame.send();
-		theFrame.cancel();//Don't wait for ACK 
+		theFrame.cancel();// Don't wait for ACK
 	}
-	
+
 	public void sendNAK(byte packetNum) {
 		Frame theFrame = new Frame(new Packet(tgtAddr, Packet.NAK, packetNum), srcSocket);
 		theFrame.send();
 		theFrame.cancel();
 	}
-	
-	public void sendSTRT() {
-		strtF = new Frame(new Packet(tgtAddr, Packet.STRT, STRT_NUM), srcSocket);
+
+	public void sendSTRT(byte[] topic) {
+		strtF = new Frame(new Packet(tgtAddr, Packet.STRT, STRT_NUM, topic), srcSocket);
 		strtF.send();
 	}
-	
+
 	public void sendSTRT_ACK() {
 		Frame theFrame = new Frame(new Packet(tgtAddr, Packet.STRT_ACK, STRT_NUM), srcSocket);
 		theFrame.send();
 		theFrame.cancel();
 	}
-	
+
 	public void sendEND(byte lastPack) {
 		endF = new Frame(new Packet(tgtAddr, Packet.END, lastPack), srcSocket);
 		endF.send();
 	}
-	
+
 	public void sendEND_ACK() {
 		Frame theFrame = new Frame(new Packet(tgtAddr, Packet.END_ACK, STRT_NUM), srcSocket);
 		theFrame.send();
 		theFrame.cancel();
 	}
-	
+
 	public void endEND() {
 		this.endF.cancel();
 		this.endF = null;
 	}
-	
+
 	public void endSTRT() {
 		this.strtF.cancel();
 		this.strtF = null;
 	}
-	
-	
+
 	private void sendData() {
 		byte[][] stringsToSend = splitStr(data);// split the string into a series of strings
 		int packetsToSend = stringsToSend.length; // number of packets to send
@@ -90,19 +89,20 @@ public class Sender extends Thread {
 		while (packetsToSend > 0) { // while there are still packets to send
 			while (activeFrames < DEF_WINDOW_WIDTH) {// while there is space in the window
 				sendPacket(new Packet(tgtAddr, Packet.DATA, pacNum, stringsToSend[packetsSent]));// send it!
+				System.out.println("DATA Sent: " + pacNum);
 				pacNum = ((pacNum + 1) > WINDOW_MAX) ? 0 : pacNum++;// if is the last in the range set to 0 ie loop
 																	// around window range
 				packetsToSend--; // one packet sent
 				packetsSent++;// ^^
 			}
 		}
-		if(pacNum == 0)
+		if (pacNum == 0)
 			pacNum = WINDOW_MAX;
 		else
 			pacNum--;
 		sendEND(pacNum);
 	}
-	
+
 	public void run() {
 		sendData();
 	}
@@ -115,7 +115,10 @@ public class Sender extends Thread {
 
 	public void ackRecieved(int index) { // ack-packet received
 		if (index < frameArray.length && index >= 0) {// is in range of array
-			frameArray[index].cancel(); // cancel frame timeout timer
+			try {//in case of null pointer
+				frameArray[index].cancel(); // cancel frame timeout timer
+			} catch (Exception e) {
+			}
 			frameArray[index] = null; // nullify frame
 			activeFrames--;// frame is no longer active
 		}
