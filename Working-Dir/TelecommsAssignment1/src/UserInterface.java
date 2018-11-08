@@ -1,6 +1,8 @@
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.net.DatagramSocket;
+import java.net.SocketException;
 import java.nio.file.Files;
 import java.util.Scanner;
 
@@ -20,15 +22,20 @@ public class UserInterface {
 	private boolean online;
 	private CommPoint commPoint;
 
-	public UserInterface() {
+	public UserInterface(String tgtName, int tgtPort, DatagramSocket srcSocket) {
 		this.online = true;
+		try {
+			commPoint = new CommPoint(tgtName, tgtPort, srcSocket);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		uInterface();
-		commPoint = new CommPoint("a", -1, -1);//****************ERR ERR ERR
 	}
 
 	private void uInterface() {
 		Scanner userInputScanner = new Scanner(System.in);
-		while (online = true) {
+		while (online) {
 			System.out.print("Please enter a command: ");
 			String userInput = userInputScanner.next();
 			if (userInput.equals(EXIT_KEYWORD)) {
@@ -36,7 +43,8 @@ public class UserInterface {
 			} else if (userInput.equals(SEND_INTERFACE_KEYWORD)) {
 				System.out.print("Please enter the name of the file you would like to send: ");
 				try {
-					File theFile = new File(userInputScanner.nextLine());
+					String tgtFile = userInputScanner.next();
+					File theFile = new File(tgtFile);
 					BufferedReader theReader = new BufferedReader(new FileReader(theFile));
 					String fData = "";
 					String ln = "";
@@ -45,6 +53,7 @@ public class UserInterface {
 					theReader.close();
 					commPoint.startDataTransmission(fData, T_COMPUTERS);
 				} catch (Exception e) {
+					e.printStackTrace();
 					System.out.println("And error occured trying to open the file.");
 				}
 			} else if (userInput.equals(SUBSCRIBE_KEYWORD)) {
@@ -68,4 +77,6 @@ public class UserInterface {
 			return "ERROR! TOPIC UNKNOWN";
 		}
 	}
+	
+	private static String tmpData = "This is a test.";
 }

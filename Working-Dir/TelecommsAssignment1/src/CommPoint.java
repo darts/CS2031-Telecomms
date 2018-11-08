@@ -9,17 +9,17 @@ public class CommPoint extends Listener implements ReceiverInterface {
 	private String dataToSend;
 	private boolean subToSend = false;
 	private String dataReceived = "";
-	private String[] window;
+	private Frame[] window;
 	private byte windowMin;
 	private byte windowMax;
 	private boolean windowValid;
 	private byte topic;
 
-	public CommPoint(String tgtName, int tgtPort, int srcPort) {
+	public CommPoint(String tgtName, int tgtPort, DatagramSocket srcPort) {
+		super(srcPort);
 		try {
-			this.socket = new DatagramSocket(srcPort);
 			this.start();
-		} catch (SocketException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		theSender = new Sender(tgtName, tgtPort, srcPort);
@@ -28,7 +28,7 @@ public class CommPoint extends Listener implements ReceiverInterface {
 	public void startDataTransmission(String theData, byte type) {
 		dataToSend = theData;
 		dataToSendBool = true;
-		byte[] theType = {type};
+		byte[] theType = { type };
 		theSender.sendSTRT(theType);
 	}
 
@@ -66,48 +66,49 @@ public class CommPoint extends Listener implements ReceiverInterface {
 	}
 
 	public void ACKReceived(byte seqNum) {
-		theSender.ackRecieved(seqNum);
 		System.out.println("ACK Received: " + seqNum);
+		theSender.ackRecieved(seqNum);
 	}
 
 	public void NAKReceived(byte seqNum) {
 		theSender.nakRecieved(seqNum);
-		System.out.println("NAK Received: " + seqNum + "   Resending...");
+		System.out.println("NAK Received: " + seqNum + "  ->Resending...");
 	}
 
 	public void STRTReceived(byte[] data) {
 		this.topic = Packet.getTopic(data);
-		System.out.println("STRT Received Topic: " + UserInterface.parseTopic(topic) + "   Sending STRT_ACK");
+		System.out.println("\nSTRT Received Topic: " + UserInterface.parseTopic(topic) + "  ->Sending STRT_ACK");
 		theSender.sendSTRT_ACK();
 		this.dataReceived = "";
-		this.window = new String[Sender.WINDOW_MAX];
+		this.window = new Frame[Sender.WINDOW_MAX];
 		this.windowMax = Sender.WINDOW_MAX - 1;
 		this.windowMin = 0;
 		this.windowValid = true;
 	}
 
 	public void STRT_ACKReceived() {
-		System.out.println("STRT_ACK Received     Beginning comms...");
+		System.out.println("STRT_ACK Received     ->Beginning comms...");
 		theSender.endSTRT();
 		if (dataToSendBool)
 			theSender.sendData(dataToSend);
 	}
 
 	public void ENDReceived(byte[] data) {
-		if(!nakMissingPackets(Packet.getSeqNum(data))) {//all packets accounted for
+		if (!nakMissingPackets(Packet.getSeqNum(data))) {// all packets accounted for
 			theSender.sendEND_ACK();
-			System.out.println("END Received      Sending END_ACK");
+			System.out.println("END Received      ->Sending END_ACK");
+			System.out.println("Data Received: " + this.dataReceived);
 		}
 	}
 
 	public void END_ACKReceived() {
 		theSender.endEND();
-		System.out.println("END_ACK Received      Connection Closed");
+		System.out.println("END_ACK Received      ->Connection Closed");
 	}
 
 	public void DATAReceived(byte[] data) {
 		handleWindow(data);
-		
+
 	}
 
 	public void SUBReceived() {
@@ -122,40 +123,87 @@ public class CommPoint extends Listener implements ReceiverInterface {
 
 	private void handleWindow(byte[] data) {
 		byte seqNum = Packet.getSeqNum(data);
-		if (seqNum < windowMax && seqNum > windowMin) {// packet is in window range
+		if (seqNum < windowMax && seqNum >= windowMin) {// packet is in window range
 			if (seqNum == windowMin) {// Packet is as anticipated
 				theSender.sendACK(seqNum);
 				dataReceived += Packet.getContents(data);
-				windowMax++;
-				windowMin++;
+				advanceWindow();
 				flushWindow(seqNum);
-				System.out.println("DATA Received      Sending ACK");
+				System.out.println("DATA Received      ->Sending ACK");
 			} else {
-				window[seqNum] = Packet.getContents(data);
+				window[seqNum] = new Frame(Packet.getContents(data));
+				placePlaceHolders(seqNum);
 				nakMissingPackets(seqNum); // nak absent packets
-				System.out.println("DATA Received   OUT OF ORDER!!  Sending NAK");
+				System.out.println("DATA Received   OUT OF ORDER!!  ->Sending NAK");
 			}
 		}
 	}
 
 	private boolean nakMissingPackets(byte seqNum) {
 		boolean retBool = false;
-		for (byte i = seqNum; i >= windowMin; i--) {// resend missing packets
-			if (window[i] == null) {
+		byte[] winFrames = CommPoint.getWindowLocs(windowMax, windowMin, Sender.DEF_WINDOW_WIDTH, Sender.WINDOW_MAX);
+		for (byte i : winFrames) {// resend missing packets
+			Frame theFrame = window[i];
+			if (theFrame != null && theFrame.isPlaceHolder)
 				theSender.sendNAK(i);
-				retBool = true;
-			}
 		}
 		return retBool;
 	}
-	
-	private void flushWindow(byte seqNum) {//remove any packets in the window
-		int i = windowMin;
-		String content = window[i];
-		while(content != null && i < windowMax) {
-			dataReceived += content;
-			window[i++] = null;
-			theSender.sendACK(seqNum);
+
+	private void placePlaceHolders(byte seqNum) {
+		byte[] winFrames = CommPoint.getWindowLocs(windowMax, windowMin, Sender.DEF_WINDOW_WIDTH, Sender.WINDOW_MAX);
+		boolean found = false;
+		int loc = -1;
+		for (int i = 0; i < winFrames.length && !found; i++) {
+			if (winFrames[i] == seqNum) {
+				loc = i;
+				found = true;
+			}
+		}
+		for (int i = loc; i >= 0; i--) {
+			if(window[i] == null)
+				window[i] = new Frame();
+		}
+	}
+
+	public static byte[] getWindowLocs(byte winMax, byte winMin, int winWidth, int size) {
+		byte[] resArr = new byte[winWidth];
+		int j = 0;
+		if (winMax > winMin) {
+			for (byte i = winMin; i <= winMax; i++) {
+				resArr[j] = i;
+			}
+			return resArr;
+		}
+		for (byte i = winMin; i < size; i++) {
+			resArr[j] = i;
+		}
+		for (byte i = 0; i <= winMax; i++) {
+			resArr[j] = i;
+		}
+		return resArr;
+	}
+
+	private void advanceWindow() {
+		if (windowMin == Sender.WINDOW_MAX - 1) {
+			windowMin = 0;
+		} else {
+			windowMin++;
+		}
+		if (windowMax == Sender.WINDOW_MAX - 1) {
+			windowMax = 0;
+		} else {
+			windowMax++;
+		}
+	}
+
+	private void flushWindow(byte seqNum) {// remove any packets in the window
+		byte[] winFrames = CommPoint.getWindowLocs(windowMax, windowMin, Sender.DEF_WINDOW_WIDTH, Sender.WINDOW_MAX);
+		for (byte i = (byte)(winFrames.length - 1); i >= 0; i--) {
+			if(window[winFrames[i]] != null) {
+				dataReceived += window[winFrames[i]].data;
+				theSender.sendACK(seqNum);
+			}
 		}
 	}
 }

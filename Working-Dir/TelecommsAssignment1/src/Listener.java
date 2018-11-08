@@ -8,8 +8,8 @@ public abstract class Listener extends Thread{
 	int port;
 	DatagramSocket socket;
 	final int MAX_SIZE = Packet.MAX_LENGTH_BYTES;
-	public Listener() {
-		
+	public Listener(DatagramSocket socket) {
+		this.socket = socket;
 	}
 	public Listener(int port){
 		this.port = port;

@@ -18,14 +18,14 @@ public class Sender extends Thread {
 	private Frame endF;
 	private Frame strtF;
 
-	public Sender(String tgtName, int tgtPort, int srcPort) {
+	public Sender(String tgtName, int tgtPort, DatagramSocket srcSocket) {
 		try {
-			this.srcPort = srcPort;
-			srcSocket = new DatagramSocket(srcPort);
+//			this.srcPort = srcPort;
+			this.srcSocket = srcSocket;
 			this.tgtPort = tgtPort;
 			this.tgtName = tgtName;
 			tgtAddr = new InetSocketAddress(this.tgtName, this.tgtPort); // get an address
-		} catch (SocketException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
@@ -74,6 +74,12 @@ public class Sender extends Thread {
 	public void endEND() {
 		this.endF.cancel();
 		this.endF = null;
+		for(Frame theFrame : frameArray) {
+			if(theFrame != null) {
+				theFrame.cancel();
+				theFrame = null;
+			}
+		}
 	}
 
 	public void endSTRT() {
@@ -87,17 +93,20 @@ public class Sender extends Thread {
 		byte pacNum = 0;
 		int packetsSent = 0;
 		while (packetsToSend > 0) { // while there are still packets to send
-			while (activeFrames < DEF_WINDOW_WIDTH) {// while there is space in the window
+			while (activeFrames < DEF_WINDOW_WIDTH && packetsToSend > 0) {// while there is space in the window
+				//System.err.println(stringsToSend.length);
 				sendPacket(new Packet(tgtAddr, Packet.DATA, pacNum, stringsToSend[packetsSent]));// send it!
 				System.out.println("DATA Sent: " + pacNum);
-				pacNum = ((pacNum + 1) > WINDOW_MAX) ? 0 : pacNum++;// if is the last in the range set to 0 ie loop
-																	// around window range
+				if(pacNum + 1 >= WINDOW_MAX)
+					pacNum = 0;
+				else
+					pacNum++;
 				packetsToSend--; // one packet sent
 				packetsSent++;// ^^
 			}
 		}
 		if (pacNum == 0)
-			pacNum = WINDOW_MAX;
+			pacNum = WINDOW_MAX - 1;
 		else
 			pacNum--;
 		sendEND(pacNum);
@@ -114,14 +123,16 @@ public class Sender extends Thread {
 	}
 
 	public void ackRecieved(int index) { // ack-packet received
-		if (index < frameArray.length && index >= 0) {// is in range of array
+//		if (index < frameArray.length && index >= 0) {// is in range of array
 			try {//in case of null pointer
 				frameArray[index].cancel(); // cancel frame timeout timer
+//				System.out.println("Packet Timeout Cancelled");
 			} catch (Exception e) {
+				System.err.println("Error Cancelling Packet Timeout: " + index);
 			}
 			frameArray[index] = null; // nullify frame
 			activeFrames--;// frame is no longer active
-		}
+//		}
 	}
 
 	public void nakRecieved(int index) { // nak-packet received

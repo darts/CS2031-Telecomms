@@ -10,10 +10,22 @@ public class Frame {
 	Timer timeoutTimer;
 	DatagramPacket theDataPack;
 	public static final int TIMEOUT_DELAY = 3000;
+	public boolean isPlaceHolder;
+	String data;
+	
+	public Frame() {
+		isPlaceHolder = true;
+	}
+	
+	public Frame(String data) {
+		this.data = data;
+		isPlaceHolder = false;
+	}
 	
 	public Frame(Packet thePack, DatagramSocket theSocket) {
 		this.thePack = thePack;
 		this.theSocket = theSocket;
+		isPlaceHolder = false;
 	}
 	
 	public void send() {
@@ -25,6 +37,7 @@ public class Frame {
 				public void run() {
 					timeoutTimer.cancel();//cancel existing timer
 					send();//resend
+					System.out.println("Packet Timeout    Resending...");
 				}
 			}, 3000);// Resend in 7 seconds
 		} catch (IOException e) {
