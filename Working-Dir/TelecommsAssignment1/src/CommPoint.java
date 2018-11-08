@@ -126,7 +126,9 @@ public class CommPoint extends Listener implements ReceiverInterface {
 		if (seqNum < windowMax && seqNum >= windowMin) {// packet is in window range
 			if (seqNum == windowMin) {// Packet is as anticipated
 				theSender.sendACK(seqNum);
-				dataReceived += Packet.getContents(data);
+				System.out.println(dataReceived.length() + " length1");
+				dataReceived = dataReceived + Packet.getContents(data);
+				System.out.println(dataReceived.length() + " length2");
 				advanceWindow();
 				flushWindow(seqNum);
 				System.out.println("DATA Received      ->Sending ACK");

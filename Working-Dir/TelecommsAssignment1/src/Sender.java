@@ -74,8 +74,8 @@ public class Sender extends Thread {
 	public void endEND() {
 		this.endF.cancel();
 		this.endF = null;
-		for(Frame theFrame : frameArray) {
-			if(theFrame != null) {
+		for (Frame theFrame : frameArray) {
+			if (theFrame != null) {
 				theFrame.cancel();
 				theFrame = null;
 			}
@@ -83,8 +83,12 @@ public class Sender extends Thread {
 	}
 
 	public void endSTRT() {
+		try {
 		this.strtF.cancel();
-		this.strtF = null;
+//		this.strtF = null;
+		}catch (Exception e) {
+			System.err.println("STRT Cancel Failed");
+		}
 	}
 
 	private void sendData() {
@@ -94,10 +98,10 @@ public class Sender extends Thread {
 		int packetsSent = 0;
 		while (packetsToSend > 0) { // while there are still packets to send
 			while (activeFrames < DEF_WINDOW_WIDTH && packetsToSend > 0) {// while there is space in the window
-				//System.err.println(stringsToSend.length);
+				// System.err.println(stringsToSend.length);
 				sendPacket(new Packet(tgtAddr, Packet.DATA, pacNum, stringsToSend[packetsSent]));// send it!
 				System.out.println("DATA Sent: " + pacNum);
-				if(pacNum + 1 >= WINDOW_MAX)
+				if (pacNum + 1 >= WINDOW_MAX)
 					pacNum = 0;
 				else
 					pacNum++;
@@ -124,14 +128,13 @@ public class Sender extends Thread {
 
 	public void ackRecieved(int index) { // ack-packet received
 //		if (index < frameArray.length && index >= 0) {// is in range of array
-			try {//in case of null pointer
-				frameArray[index].cancel(); // cancel frame timeout timer
-//				System.out.println("Packet Timeout Cancelled");
-			} catch (Exception e) {
-				System.err.println("Error Cancelling Packet Timeout: " + index);
-			}
-			frameArray[index] = null; // nullify frame
-			activeFrames--;// frame is no longer active
+		try {// in case of null pointer
+			frameArray[index].cancel(); // cancel frame timeout timer
+		} catch (Exception e) {
+			System.err.println("Error Cancelling Packet Timeout: " + index);
+		}
+		frameArray[index] = null; // nullify frame
+		activeFrames--;// frame is no longer active
 //		}
 	}
 
@@ -150,10 +153,10 @@ public class Sender extends Thread {
 		int start = 0;
 		// if the length of the array is less than the max, use it as the max
 		int end = (strByteArr.length < Packet.MAX_LENGTH_BYTES) ? strByteArr.length : Packet.MAX_LENGTH_BYTES;
-		for (byte[] rsString : resByte) {// for every byte array
-			rsString = Arrays.copyOfRange(strByteArr, start, end);// copy section of byte[]
+		for (int i = 0; i < resByte.length; i++) {// for every byte array
+			resByte[i] = Arrays.copyOfRange(strByteArr, start, end);// copy section of byte[]
 			start += Packet.MAX_LENGTH_BYTES;
-			end = ((end + Packet.MAX_LENGTH_BYTES) > theString.length()) ? theString.length()
+			end = ((end + Packet.MAX_LENGTH_BYTES) > strByteArr.length) ? strByteArr.length
 					: (end + Packet.MAX_LENGTH_BYTES);
 		}
 		return resByte;

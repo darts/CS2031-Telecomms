@@ -62,7 +62,7 @@ public class Packet {
 		if (contentArr == null) // if packet was initialized with string
 			contentArr = content.getBytes(DEF_ENCODING);// convert string to byte array
 		byte[] data = new byte[contentArr.length + NUM_OF_ADDITIONAL_BYTES];
-		for (int i = 0; i < contentArr.length; i++) // write the contents
+		for (int i = NUM_OF_ADDITIONAL_BYTES; i < contentArr.length; i++) // write the contents
 			data[i + NUM_OF_ADDITIONAL_BYTES] = contentArr[i];
 		data[0] = packType;
 		data[1] = seqNum;
@@ -87,9 +87,7 @@ public class Packet {
 
 	//get the contents from a byte[]
 	public static String getContents(byte[] data) {
-		byte[] contentArray = new byte[data.length - NUM_OF_ADDITIONAL_BYTES];
-		for (int i = 0; i < contentArray.length; i++)
-			contentArray[i] = data[i + NUM_OF_ADDITIONAL_BYTES];
+		byte[] contentArray = Arrays.copyOfRange(data,NUM_OF_ADDITIONAL_BYTES - 1,data.length -1);
 		String content = new String(contentArray, DEF_ENCODING);
 		return content;
 	}

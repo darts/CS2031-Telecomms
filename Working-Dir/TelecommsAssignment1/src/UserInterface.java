@@ -53,7 +53,6 @@ public class UserInterface {
 					theReader.close();
 					commPoint.startDataTransmission(fData, T_COMPUTERS);
 				} catch (Exception e) {
-					e.printStackTrace();
 					System.out.println("And error occured trying to open the file.");
 				}
 			} else if (userInput.equals(SUBSCRIBE_KEYWORD)) {
