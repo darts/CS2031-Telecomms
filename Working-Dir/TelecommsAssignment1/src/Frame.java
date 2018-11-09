@@ -12,45 +12,48 @@ public class Frame {
 	public static final int TIMEOUT_DELAY = 5000;
 	public boolean isPlaceHolder;
 	String data;
-	
+
 	public Frame() {
 		isPlaceHolder = true;
 	}
-	
+
 	public Frame(String data) {
 		this.data = data;
 		isPlaceHolder = false;
 	}
-	
+
 	public Frame(Packet thePack, DatagramSocket theSocket) {
 		this.thePack = thePack;
 		this.theSocket = theSocket;
 		isPlaceHolder = false;
 	}
-	
+
 	public void send() {
 		try {
-			theDataPack = thePack.toDatagramPacket();//packet -> datagramPacket
-			theSocket.send(theDataPack);//send it! (for reals tho)
-			timeoutTimer = new Timer();//start timeout timer
-			timeoutTimer.schedule(new TimerTask() {//tell the timer what to do
+			theDataPack = thePack.toDatagramPacket();// packet -> datagramPacket
+			timeoutTimer = new Timer();// start timeout timer
+			timeoutTimer.schedule(new TimerTask() {// tell the timer what to do
 				public void run() {
-					timeoutTimer.cancel();//cancel existing timer
-					send();//resend
-					System.out.println("Packet Timeout    Resending...");
+					timeoutTimer.cancel();// cancel existing timer
+					send();// resend
+					System.out.println("Packet Timeout " + thePack.seqNum + "   Resending...");
 				}
-			}, Frame.TIMEOUT_DELAY);// Resend in 7 seconds
+			}, Frame.TIMEOUT_DELAY);// Resend in x seconds
+			theSocket.send(theDataPack);// send it! (for reals tho)
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
-	
-	public void resend() {//resend a packer
+
+	public void resend() {// resend a packer
 		timeoutTimer.cancel();
+		timeoutTimer.purge();
 		send();
 	}
-	
-	public void cancel() {//don't resend a packet
+
+	public void cancel() {// don't resend a packet
 		timeoutTimer.cancel();
+		timeoutTimer.purge();
+		timeoutTimer = null;
 	}
 }

@@ -1,3 +1,7 @@
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
@@ -15,15 +19,25 @@ public class CommPoint extends Listener implements ReceiverInterface {
 	private byte windowMax;
 	private boolean windowValid;
 	private byte topic;
+	private String tgtName;
+	private int tgtPort;
+	private int recNum = 0;
+	BufferedWriter writer;
+//	writer.println("The first line");
+//	writer.println("The second line");
+//	writer.close();
 
 	public CommPoint(String tgtName, int tgtPort, DatagramSocket srcPort) {
 		super(srcPort);
+		this.tgtName = tgtName;
+		this.tgtPort = tgtPort;
+		this.socket = srcPort;
+		init();
 		try {
 			this.start();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		theSender = new Sender(tgtName, tgtPort, srcPort);
 	}
 
 	public void startDataTransmission(String theData, byte type) {
@@ -79,7 +93,20 @@ public class CommPoint extends Listener implements ReceiverInterface {
 
 	public void STRTReceived(byte[] data) {
 		init();
+		try {
+			writer = new BufferedWriter(new FileWriter(Integer.toString(recNum++)));
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
 		this.topic = Packet.getTopic(data);
+		try {
+			writer.write(UserInterface.parseTopic(topic) + "\n");
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		;
 		System.out.println("\nSTRT Received Topic: " + UserInterface.parseTopic(topic) + "  ->Sending STRT_ACK");
 		theSender.sendSTRT_ACK();
 	}
@@ -97,7 +124,15 @@ public class CommPoint extends Listener implements ReceiverInterface {
 			System.out.println("END Received      ->Sending END_ACK");
 			System.out.println("Data Received: " + this.dataReceived);
 			init();
+//			theSender = new Sender(tgtName, tgtPort, socket);
+			try {
+				writer.flush();
+				writer.close();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
+
 	}
 
 	public void END_ACKReceived() {
@@ -122,15 +157,22 @@ public class CommPoint extends Listener implements ReceiverInterface {
 
 	private void handleWindow(byte[] data) {
 		byte seqNum = Packet.getSeqNum(data);
-		System.err.println("Datapack received  " + seqNum + "  winMin " + windowMin + "   winMax " + windowMax);
+//		System.err.println("Datapack received  " + seqNum + "  winMin " + windowMin + "   winMax " + windowMax);
 		System.err.flush();
 		if (isInRange(seqNum)) {// packet is in window range
 			if (seqNum == windowMin) {// Packet is as anticipated
 				theSender.sendACK(seqNum);
-				dataReceived = dataReceived + Packet.getContents(data);
+				String dataRec = Packet.getContents(data);
+				dataReceived = dataReceived + dataRec;
 				advanceWindow();
 				flushWindow(seqNum);
-				System.out.println("DATA Received "+ seqNum + "     ->Sending ACK");
+				try {
+					writer.write(dataRec);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				System.out.println("DATA Received " + seqNum + "     ->Sending ACK");
 			} else {
 				window[seqNum] = new Frame(Packet.getContents(data));
 				placePlaceHolders(seqNum);
@@ -139,11 +181,11 @@ public class CommPoint extends Listener implements ReceiverInterface {
 			}
 		}
 	}
-	
+
 	private boolean isInRange(byte seqNum) {
 		byte[] winLocs = getWindowLocs(windowMax, windowMin, Sender.DEF_WINDOW_WIDTH, Sender.WINDOW_MAX);
-		for(int i = 0; i < winLocs.length; i++) {
-			if(winLocs[i] == seqNum)
+		for (int i = 0; i < winLocs.length; i++) {
+			if (winLocs[i] == seqNum)
 				return true;
 		}
 		return false;
@@ -171,7 +213,7 @@ public class CommPoint extends Listener implements ReceiverInterface {
 			}
 		}
 		for (int i = loc; i >= 0; i--) {
-			if(window[i] == null)
+			if (window[i] == null)
 				window[i] = new Frame();
 		}
 	}
@@ -209,14 +251,21 @@ public class CommPoint extends Listener implements ReceiverInterface {
 
 	private void flushWindow(byte seqNum) {// remove any packets in the window
 		byte[] winFrames = CommPoint.getWindowLocs(windowMax, windowMin, Sender.DEF_WINDOW_WIDTH, Sender.WINDOW_MAX);
-		for (byte i = (byte)(winFrames.length - 1); i >= 0; i--) {
-			if(window[winFrames[i]] != null) {
-				dataReceived += window[winFrames[i]].data;
+		for (byte i = (byte) (winFrames.length - 1); i >= 0; i--) {
+			if (window[winFrames[i]] != null) {
+				String dataRec = window[winFrames[i]].data;
+				dataReceived += dataRec;
+				try {
+					writer.write(dataRec);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 				theSender.sendACK(seqNum);
 			}
 		}
 	}
-	
+
 	private void init() {
 		dataToSendBool = false;
 		dataToSend = null;
@@ -227,5 +276,6 @@ public class CommPoint extends Listener implements ReceiverInterface {
 		this.windowMax = Sender.DEF_WINDOW_WIDTH;
 		this.windowMin = 0;
 		this.windowValid = true;
+		theSender = new Sender(tgtName, tgtPort, socket);
 	}
 }

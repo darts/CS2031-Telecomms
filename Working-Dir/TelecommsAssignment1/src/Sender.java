@@ -20,7 +20,6 @@ public class Sender extends Thread {
 
 	public Sender(String tgtName, int tgtPort, DatagramSocket srcSocket) {
 		try {
-//			this.srcPort = srcPort;
 			this.srcSocket = srcSocket;
 			this.tgtPort = tgtPort;
 			this.tgtName = tgtName;
@@ -52,7 +51,8 @@ public class Sender extends Thread {
 	public void sendSTRT(byte[] topic) {
 		strtF = new Frame(new Packet(tgtAddr, Packet.STRT, STRT_NUM, topic), srcSocket);
 		strtF.send();
-		strtF.cancel();
+		System.out.println("Sending STRT.");
+		System.out.flush();
 	}
 
 	public void sendSTRT_ACK() {
@@ -75,12 +75,15 @@ public class Sender extends Thread {
 	public void endEND() {
 		this.endF.cancel();
 		this.endF = null;
-		for (Frame theFrame : frameArray) {
+		for (int i = 0; i < frameArray.length; i++) {
+			Frame theFrame = frameArray[i];
 			if (theFrame != null) {
 				theFrame.cancel();
 				theFrame = null;
 			}
 		}
+		frameArray = null;
+//		this.interrupt();
 	}
 
 	public void endSTRT() {
@@ -88,32 +91,39 @@ public class Sender extends Thread {
 			strtF.cancel();
 			strtF = null;
 		} catch (Exception e) {
-//			System.err.println("STRT Cancel Failed");
+			System.err.println("STRT Cancel Failed");
 		}
 	}
 
 	private void sendData() {
 		byte[][] stringsToSend = splitStr(data);// split the string into a series of strings
 		int packetsToSend = stringsToSend.length; // number of packets to send
+//		System.out.println(packetsToSend + " packets to send.");
+		System.out.flush();
 		byte pacNum = 0;
 		int packetsSent = 0;
-		while (packetsToSend > 0) { // while there are still packets to send
+		do{ // while there are still packets to send
 			while (activeFrames < DEF_WINDOW_WIDTH && packetsToSend > 0) {// while there is space in the window
-				sendPacket(new Packet(tgtAddr, Packet.DATA, pacNum, stringsToSend[packetsSent]));// send it!
-				System.out.println("DATA Sent: " + pacNum);
-				if (pacNum + 1 > WINDOW_MAX)
+				Packet thePack = new Packet(tgtAddr, Packet.DATA, pacNum, stringsToSend[packetsSent]);// send it!
+				sendPacket(thePack);
+				System.err.println("DATA Sent: " + pacNum);
+				System.err.flush();
+				if (pacNum + 1 >= WINDOW_MAX)
 					pacNum = 0;
 				else
 					pacNum++;
 				packetsToSend--; // one packet sent
 				packetsSent++;// ^^
 			}
-		}
+//			System.out.println(packetsToSend + " packets to send.");
+			System.out.flush();
+		}while (packetsToSend > 0 && activeFrames > 0);
 		if (pacNum == 0)
 			pacNum = WINDOW_MAX - 1;
 		else
 			pacNum--;
 		sendEND(pacNum);
+		this.interrupt();
 	}
 
 	public void run() {
@@ -127,7 +137,6 @@ public class Sender extends Thread {
 	}
 
 	public void ackRecieved(int index) { // ack-packet received
-//		if (index < frameArray.length && index >= 0) {// is in range of array
 		try {// in case of null pointer
 			frameArray[index].cancel(); // cancel frame timeout timer
 		} catch (Exception e) {

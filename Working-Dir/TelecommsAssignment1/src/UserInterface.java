@@ -51,7 +51,11 @@ public class UserInterface {
 					while((ln = theReader.readLine()) != null)
 						fData += ln;
 					theReader.close();
+					try {
 					commPoint.startDataTransmission(fData, T_COMPUTERS);
+					}catch(Exception e) {
+						System.err.println("commPoint failed to transmit data.");
+					}
 				} catch (Exception e) {
 					System.out.println("And error occured trying to open the file.");
 				}
