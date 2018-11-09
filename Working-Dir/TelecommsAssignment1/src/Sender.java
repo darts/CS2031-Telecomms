@@ -34,7 +34,7 @@ public class Sender extends Thread {
 
 	public void sendData(String data) {
 		this.data = data;
-		run();
+		this.start();
 	}
 
 	public void sendACK(byte packetNum) {
@@ -52,6 +52,7 @@ public class Sender extends Thread {
 	public void sendSTRT(byte[] topic) {
 		strtF = new Frame(new Packet(tgtAddr, Packet.STRT, STRT_NUM, topic), srcSocket);
 		strtF.send();
+		strtF.cancel();
 	}
 
 	public void sendSTRT_ACK() {
@@ -84,10 +85,10 @@ public class Sender extends Thread {
 
 	public void endSTRT() {
 		try {
-		this.strtF.cancel();
-//		this.strtF = null;
-		}catch (Exception e) {
-			System.err.println("STRT Cancel Failed");
+			strtF.cancel();
+			strtF = null;
+		} catch (Exception e) {
+//			System.err.println("STRT Cancel Failed");
 		}
 	}
 
@@ -98,10 +99,9 @@ public class Sender extends Thread {
 		int packetsSent = 0;
 		while (packetsToSend > 0) { // while there are still packets to send
 			while (activeFrames < DEF_WINDOW_WIDTH && packetsToSend > 0) {// while there is space in the window
-				// System.err.println(stringsToSend.length);
 				sendPacket(new Packet(tgtAddr, Packet.DATA, pacNum, stringsToSend[packetsSent]));// send it!
 				System.out.println("DATA Sent: " + pacNum);
-				if (pacNum + 1 >= WINDOW_MAX)
+				if (pacNum + 1 > WINDOW_MAX)
 					pacNum = 0;
 				else
 					pacNum++;

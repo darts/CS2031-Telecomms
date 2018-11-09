@@ -1,6 +1,7 @@
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
+import java.util.Arrays;
 
 public class CommPoint extends Listener implements ReceiverInterface {
 	private Sender theSender;
@@ -26,13 +27,13 @@ public class CommPoint extends Listener implements ReceiverInterface {
 	}
 
 	public void startDataTransmission(String theData, byte type) {
+		init();
 		dataToSend = theData;
 		dataToSendBool = true;
 		byte[] theType = { type };
 		theSender.sendSTRT(theType);
 	}
 
-	@Override
 	public void packetRecieved(DatagramPacket thePacket) {
 		byte type = Packet.getType(thePacket);
 		switch (type) {
@@ -67,6 +68,7 @@ public class CommPoint extends Listener implements ReceiverInterface {
 
 	public void ACKReceived(byte seqNum) {
 		System.out.println("ACK Received: " + seqNum);
+		System.out.flush();
 		theSender.ackRecieved(seqNum);
 	}
 
@@ -76,14 +78,10 @@ public class CommPoint extends Listener implements ReceiverInterface {
 	}
 
 	public void STRTReceived(byte[] data) {
+		init();
 		this.topic = Packet.getTopic(data);
 		System.out.println("\nSTRT Received Topic: " + UserInterface.parseTopic(topic) + "  ->Sending STRT_ACK");
 		theSender.sendSTRT_ACK();
-		this.dataReceived = "";
-		this.window = new Frame[Sender.WINDOW_MAX];
-		this.windowMax = Sender.WINDOW_MAX - 1;
-		this.windowMin = 0;
-		this.windowValid = true;
 	}
 
 	public void STRT_ACKReceived() {
@@ -98,6 +96,7 @@ public class CommPoint extends Listener implements ReceiverInterface {
 			theSender.sendEND_ACK();
 			System.out.println("END Received      ->Sending END_ACK");
 			System.out.println("Data Received: " + this.dataReceived);
+			init();
 		}
 	}
 
@@ -123,15 +122,15 @@ public class CommPoint extends Listener implements ReceiverInterface {
 
 	private void handleWindow(byte[] data) {
 		byte seqNum = Packet.getSeqNum(data);
-		if (seqNum < windowMax && seqNum >= windowMin) {// packet is in window range
+		System.err.println("Datapack received  " + seqNum + "  winMin " + windowMin + "   winMax " + windowMax);
+		System.err.flush();
+		if (isInRange(seqNum)) {// packet is in window range
 			if (seqNum == windowMin) {// Packet is as anticipated
 				theSender.sendACK(seqNum);
-				System.out.println(dataReceived.length() + " length1");
 				dataReceived = dataReceived + Packet.getContents(data);
-				System.out.println(dataReceived.length() + " length2");
 				advanceWindow();
 				flushWindow(seqNum);
-				System.out.println("DATA Received      ->Sending ACK");
+				System.out.println("DATA Received "+ seqNum + "     ->Sending ACK");
 			} else {
 				window[seqNum] = new Frame(Packet.getContents(data));
 				placePlaceHolders(seqNum);
@@ -139,6 +138,15 @@ public class CommPoint extends Listener implements ReceiverInterface {
 				System.out.println("DATA Received   OUT OF ORDER!!  ->Sending NAK");
 			}
 		}
+	}
+	
+	private boolean isInRange(byte seqNum) {
+		byte[] winLocs = getWindowLocs(windowMax, windowMin, Sender.DEF_WINDOW_WIDTH, Sender.WINDOW_MAX);
+		for(int i = 0; i < winLocs.length; i++) {
+			if(winLocs[i] == seqNum)
+				return true;
+		}
+		return false;
 	}
 
 	private boolean nakMissingPackets(byte seqNum) {
@@ -172,27 +180,27 @@ public class CommPoint extends Listener implements ReceiverInterface {
 		byte[] resArr = new byte[winWidth];
 		int j = 0;
 		if (winMax > winMin) {
-			for (byte i = winMin; i <= winMax; i++) {
-				resArr[j] = i;
+			for (byte i = winMin; i < winMax; i++) {
+				resArr[j++] = i;
 			}
 			return resArr;
 		}
 		for (byte i = winMin; i < size; i++) {
-			resArr[j] = i;
+			resArr[j++] = i;
 		}
-		for (byte i = 0; i <= winMax; i++) {
-			resArr[j] = i;
+		for (byte i = 0; i < winMax; i++) {
+			resArr[j++] = i;
 		}
 		return resArr;
 	}
 
 	private void advanceWindow() {
-		if (windowMin == Sender.WINDOW_MAX - 1) {
+		if ((windowMin + 1) == Sender.WINDOW_MAX) {
 			windowMin = 0;
 		} else {
 			windowMin++;
 		}
-		if (windowMax == Sender.WINDOW_MAX - 1) {
+		if ((windowMax + 1) == Sender.WINDOW_MAX) {
 			windowMax = 0;
 		} else {
 			windowMax++;
@@ -207,5 +215,17 @@ public class CommPoint extends Listener implements ReceiverInterface {
 				theSender.sendACK(seqNum);
 			}
 		}
+	}
+	
+	private void init() {
+		dataToSendBool = false;
+		dataToSend = null;
+		subToSend = false;
+		topic = -1;
+		this.dataReceived = "";
+		this.window = new Frame[Sender.WINDOW_MAX];
+		this.windowMax = Sender.DEF_WINDOW_WIDTH;
+		this.windowMin = 0;
+		this.windowValid = true;
 	}
 }

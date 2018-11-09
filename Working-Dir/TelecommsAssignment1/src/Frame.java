@@ -9,7 +9,7 @@ public class Frame {
 	DatagramSocket theSocket;
 	Timer timeoutTimer;
 	DatagramPacket theDataPack;
-	public static final int TIMEOUT_DELAY = 3000;
+	public static final int TIMEOUT_DELAY = 5000;
 	public boolean isPlaceHolder;
 	String data;
 	
@@ -39,7 +39,7 @@ public class Frame {
 					send();//resend
 					System.out.println("Packet Timeout    Resending...");
 				}
-			}, 3000);// Resend in 7 seconds
+			}, Frame.TIMEOUT_DELAY);// Resend in 7 seconds
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
