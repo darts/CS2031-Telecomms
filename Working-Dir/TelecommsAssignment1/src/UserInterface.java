@@ -4,6 +4,7 @@ import java.io.FileReader;
 import java.net.DatagramSocket;
 import java.net.SocketException;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Scanner;
 
 public class UserInterface {
@@ -18,20 +19,32 @@ public class UserInterface {
 	public static final String EXIT_KEYWORD = "quit";
 	public static final String SUBSCRIBE_KEYWORD = "sub";
 	public static final String SEND_INTERFACE_KEYWORD = "send";
+	public static final String BROKER_KEYWORD = "broker";
 
 	private boolean online;
 	private CommPoint commPoint;
+	private boolean isBroker = false;
 
 	public UserInterface(String tgtName, int tgtPort, DatagramSocket srcSocket) {
 		this.online = true;
 		try {
 			commPoint = new CommPoint(tgtName, tgtPort, srcSocket);
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		uInterface();
 	}
+
+//	public UserInterface(String tgtName, int tgtPort, int srcSocket, ArrayList<Contact> subList) {
+//		this.online = true;
+//		this.isBroker = true;
+//		try {
+//			commPoint = new CommPoint(tgtName, tgtPort, srcSocket, new DatagramSocket(srcSocket),subList);
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//		}
+//		uInterface();
+//	}
 
 	private void uInterface() {
 		Scanner userInputScanner = new Scanner(System.in);
@@ -48,18 +61,21 @@ public class UserInterface {
 					BufferedReader theReader = new BufferedReader(new FileReader(theFile));
 					String fData = "";
 					String ln = "";
-					while((ln = theReader.readLine()) != null)
+					while ((ln = theReader.readLine()) != null)
 						fData += ln;
 					theReader.close();
 					try {
-					commPoint.startDataTransmission(fData, T_COMPUTERS);
-					}catch(Exception e) {
+						commPoint.startDataTransmission(fData, T_COMPUTERS);
+					} catch (Exception e) {
+						e.printStackTrace();
 						System.err.println("commPoint failed to transmit data.");
 					}
 				} catch (Exception e) {
 					System.out.println("And error occured trying to open the file.");
 				}
 			} else if (userInput.equals(SUBSCRIBE_KEYWORD)) {
+
+			} else if (userInput.equals(BROKER_KEYWORD) && isBroker) {
 
 			} else {
 				System.out.println("ERROR! Input not recognised!");
@@ -80,6 +96,4 @@ public class UserInterface {
 			return "ERROR! TOPIC UNKNOWN";
 		}
 	}
-	
-	private static String tmpData = "This is a test.";
 }

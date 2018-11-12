@@ -1,5 +1,6 @@
 import java.net.DatagramPacket;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -8,7 +9,7 @@ public class Packet {
 	public static final int MAX_LENGTH_BITS = 65536;// Max num. of bits (2 bytes -> short)
 	public static final int MAX_LENGTH_BYTES = MAX_LENGTH_BITS / 8;
 
-	public static final Charset DEF_ENCODING = StandardCharsets.UTF_16; // for converting strings to Char[]
+	public static final Charset DEF_ENCODING = StandardCharsets.UTF_8; // for converting strings to Char[]
 
 	public static final byte ACK = 0; // ack a packet
 	public static final byte NAK = 1; // nak a packet
@@ -19,6 +20,8 @@ public class Packet {
 	public static final byte STRT_ACK = 6; // ack a transmission start
 	public static final byte END = 7; // end of data packets
 	public static final byte END_ACK = 8; // ack transmission end
+	public static final byte MGMT = 9;
+	public static final byte MGMT_ACK = 10;
 
 	public byte packType;// 1 byte to identify type
 	public byte seqNum;// 1 byte to identify number in sequence
@@ -54,6 +57,12 @@ public class Packet {
 		packType = type;// 1 byte to identify packet type
 		seqNum = sequNum;// 1 byte to identify sequence number
 		contentArr = new byte[0];
+	}
+	
+	public Packet(InetSocketAddress targetAddr, byte type, int data) {
+		this.targetAddr = targetAddr;
+		this.packType = type;
+		contentArr = ByteBuffer.allocate(4).putInt(data).array();
 	}
 
 	// convert to a datagramPacket and set socket addr.
@@ -118,5 +127,12 @@ public class Packet {
 	
 	public static byte getTopic(byte[] data) {
 		return data[NUM_OF_ADDITIONAL_BYTES];
+	}
+	
+	public static int getDataByte(byte[] data) {
+		byte[] arr = new byte[data.length - Packet.NUM_OF_ADDITIONAL_BYTES];
+		for(int i = 0; i < arr.length; i++) 
+			arr[i] = data[i + Packet.NUM_OF_ADDITIONAL_BYTES];
+		return ByteBuffer.wrap(arr).getInt();
 	}
 }

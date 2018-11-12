@@ -8,4 +8,6 @@ public interface ReceiverInterface {
 	public void END_ACKReceived();
 	public void SUBReceived();
 	public void USUBReceived();
+	public void MGMTReceived(byte[] data);
+	public void MGMT_ACKReceived();
 }

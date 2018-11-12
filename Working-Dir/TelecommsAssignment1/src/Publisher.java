@@ -3,9 +3,9 @@ import java.net.SocketException;
 
 public class Publisher {
 
-	private static final int DEFAULT_SRC_PORT = 50000;
-	private static final int DEFAULT_DST_PORT = 50001;
-	private static final String DEFAULT_DST_NODE = "subscriber";
+	private static final int DEFAULT_SRC_PORT = 50001;
+	private static final int DEFAULT_DST_PORT = 50000;
+	private static final String DEFAULT_DST_NODE = "broker";
 	
 	public static void main(String[] args) {
 		DatagramSocket theSocket = null;

@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
+import java.util.ArrayList;
 import java.util.Arrays;
 
 public class CommPoint extends Listener implements ReceiverInterface {
@@ -22,10 +23,14 @@ public class CommPoint extends Listener implements ReceiverInterface {
 	private String tgtName;
 	private int tgtPort;
 	private int recNum = 0;
-	BufferedWriter writer;
-//	writer.println("The first line");
-//	writer.println("The second line");
-//	writer.close();
+	private BufferedWriter writer;
+	private boolean receiveComplete = false;
+	public boolean isPub;
+	private String lastRec;
+	private byte lastTopic;
+//	private ArrayList<Contact> subList;
+//	private boolean isBroker = false;
+//	private DatagramSocket fwdPort;
 
 	public CommPoint(String tgtName, int tgtPort, DatagramSocket srcPort) {
 		super(srcPort);
@@ -39,6 +44,30 @@ public class CommPoint extends Listener implements ReceiverInterface {
 			e.printStackTrace();
 		}
 	}
+
+	public CommPoint(String tgtName, int tgtPort, int sPort, DatagramSocket srcPort, boolean isPub) {
+		this(tgtName, tgtPort, srcPort);
+		this.isPub = isPub;
+		theSender.sendMGMT(sPort);
+	}
+
+//	public CommPoint(String tgtName, int tgtPort, int srcPortNum, DatagramSocket srcPort, ArrayList<Contact> subList) {
+//		super(srcPort);
+//		this.tgtName = tgtName;
+//		this.tgtPort = tgtPort;
+//		try {
+//			this.fwdPort = new DatagramSocket(++srcPortNum);
+//		} catch (SocketException e1) {
+//			e1.printStackTrace();
+//		}
+//		init();
+//		this.subList = subList;
+//		try {
+//			this.start();
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//		}
+//	}
 
 	public void startDataTransmission(String theData, byte type) {
 		init();
@@ -77,6 +106,13 @@ public class CommPoint extends Listener implements ReceiverInterface {
 			break;
 		case Packet.END_ACK:
 			this.END_ACKReceived();
+			break;
+		case Packet.MGMT:
+			this.MGMTReceived(thePacket.getData());
+			break;
+		case Packet.MGMT_ACK:
+			this.MGMT_ACKReceived();
+			break;
 		}
 	}
 
@@ -124,13 +160,13 @@ public class CommPoint extends Listener implements ReceiverInterface {
 			System.out.println("END Received      ->Sending END_ACK");
 			System.out.println("Data Received: " + this.dataReceived);
 			init();
-//			theSender = new Sender(tgtName, tgtPort, socket);
 			try {
 				writer.flush();
 				writer.close();
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
+			this.receiveComplete = true;
 		}
 
 	}
@@ -138,6 +174,27 @@ public class CommPoint extends Listener implements ReceiverInterface {
 	public void END_ACKReceived() {
 		theSender.endEND();
 		System.out.println("END_ACK Received      ->Connection Closed");
+//		if(isBroker) {
+//			for(Contact theSub : subList) {
+//				if(theSub.subList.contains(topic)) {
+//					System.out.println("Forwarding packet to subscriber.");
+//					CommPoint fwdPoint = new CommPoint(theSub.name, theSub.portNum, fwdPort);
+//					fwdPoint.startDataTransmission(dataReceived, topic);
+//				}
+//			}
+//		}
+	}
+
+	public String getData() {
+		if (this.receiveComplete == true && !this.lastRec.equals("")) {
+			this.receiveComplete = false;
+			return this.dataReceived;
+		}
+		return null;
+	}
+
+	public byte getTopic() {
+		return this.lastTopic;
 	}
 
 	public void DATAReceived(byte[] data) {
@@ -270,12 +327,27 @@ public class CommPoint extends Listener implements ReceiverInterface {
 		dataToSendBool = false;
 		dataToSend = null;
 		subToSend = false;
+		this.lastTopic = topic;
 		topic = -1;
+		this.lastRec = this.dataReceived;
 		this.dataReceived = "";
 		this.window = new Frame[Sender.WINDOW_MAX];
 		this.windowMax = Sender.DEF_WINDOW_WIDTH;
 		this.windowMin = 0;
 		this.windowValid = true;
 		theSender = new Sender(tgtName, tgtPort, socket);
+	}
+
+	@Override
+	public void MGMTReceived(byte[] data) {
+		this.tgtPort = Packet.getDataByte(data);
+		System.out.println("New TargetPort Received: " + tgtPort);
+		init();
+		theSender.sendMGMT_ACK();
+	}
+
+	@Override
+	public void MGMT_ACKReceived() {
+		theSender.endMGMT();
 	}
 }

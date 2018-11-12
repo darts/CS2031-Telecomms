@@ -1,6 +1,5 @@
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
-import java.net.SocketException;
 import java.util.Arrays;
 
 public class Sender extends Thread {
@@ -17,6 +16,7 @@ public class Sender extends Thread {
 
 	private Frame endF;
 	private Frame strtF;
+	private Frame mgmtF;
 
 	public Sender(String tgtName, int tgtPort, DatagramSocket srcSocket) {
 		try {
@@ -70,6 +70,21 @@ public class Sender extends Thread {
 		Frame theFrame = new Frame(new Packet(tgtAddr, Packet.END_ACK, STRT_NUM), srcSocket);
 		theFrame.send();
 		theFrame.cancel();
+	}
+	
+	public void sendMGMT(int pNum) {
+		mgmtF = new Frame(new Packet(tgtAddr, Packet.MGMT, pNum), srcSocket);
+		mgmtF.send();
+	}
+	
+	public void sendMGMT_ACK() {
+		Frame theFrame = new Frame(new Packet(tgtAddr, Packet.MGMT_ACK, STRT_NUM), srcSocket);
+		theFrame.send();
+		theFrame.cancel();
+	}
+	public void endMGMT() {
+		mgmtF.cancel();
+		mgmtF = null;
 	}
 
 	public void endEND() {
