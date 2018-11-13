@@ -28,7 +28,7 @@ public class Frame {
 		isPlaceHolder = false;
 	}
 
-	public void send() {
+	public void send() {// send a packet
 		try {
 			theDataPack = thePack.toDatagramPacket();// packet -> datagramPacket
 			timeoutTimer = new Timer();// start timeout timer
@@ -45,7 +45,7 @@ public class Frame {
 		}
 	}
 
-	public void resend() {// resend a packer
+	public void resend() {// resend a packet
 		timeoutTimer.cancel();
 		timeoutTimer.purge();
 		send();

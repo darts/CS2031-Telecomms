@@ -14,7 +14,7 @@ public class Subscriber {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		new UserInterface(DEFAULT_DST_NODE, DEFAULT_DST_PORT, theSocket);
+		new UserInterface(DEFAULT_DST_NODE, DEFAULT_DST_PORT, theSocket);//create UI
 	}
 
 }

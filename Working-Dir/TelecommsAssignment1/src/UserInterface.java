@@ -19,7 +19,7 @@ public class UserInterface {
 	public static final String EXIT_KEYWORD = "quit";
 	public static final String SUBSCRIBE_KEYWORD = "sub";
 	public static final String SEND_INTERFACE_KEYWORD = "send";
-	public static final String BROKER_KEYWORD = "broker";
+	public static final String UNSUBSCRIBE_KEYWORD = "unsub";
 
 	private boolean online;
 	private CommPoint commPoint;
@@ -35,27 +35,20 @@ public class UserInterface {
 		uInterface();
 	}
 
-//	public UserInterface(String tgtName, int tgtPort, int srcSocket, ArrayList<Contact> subList) {
-//		this.online = true;
-//		this.isBroker = true;
-//		try {
-//			commPoint = new CommPoint(tgtName, tgtPort, srcSocket, new DatagramSocket(srcSocket),subList);
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//		}
-//		uInterface();
-//	}
-
 	private void uInterface() {
 		Scanner userInputScanner = new Scanner(System.in);
+		System.out.println("Commands are:\n" + UserInterface.EXIT_KEYWORD + "\n" + UserInterface.SUBSCRIBE_KEYWORD
+				+ "\n" + UserInterface.UNSUBSCRIBE_KEYWORD + "\n" + UserInterface.SEND_INTERFACE_KEYWORD);
 		while (online) {
 			System.out.print("Please enter a command: ");
 			String userInput = userInputScanner.next();
 			if (userInput.equals(EXIT_KEYWORD)) {
 				online = false;
 			} else if (userInput.equals(SEND_INTERFACE_KEYWORD)) {
-				System.out.print("Please enter the name of the file you would like to send: ");
 				try {
+					System.out.print("Please enter the topic (0-2): ");
+					byte topic = (byte)userInputScanner.nextInt();
+					System.out.print("Please enter the name of the file you would like to send: ");
 					String tgtFile = userInputScanner.next();
 					File theFile = new File(tgtFile);
 					BufferedReader theReader = new BufferedReader(new FileReader(theFile));
@@ -65,7 +58,7 @@ public class UserInterface {
 						fData += ln;
 					theReader.close();
 					try {
-						commPoint.startDataTransmission(fData, T_COMPUTERS);
+						commPoint.startDataTransmission(fData, topic);
 					} catch (Exception e) {
 						e.printStackTrace();
 						System.err.println("commPoint failed to transmit data.");
@@ -74,9 +67,13 @@ public class UserInterface {
 					System.out.println("And error occured trying to open the file.");
 				}
 			} else if (userInput.equals(SUBSCRIBE_KEYWORD)) {
-
-			} else if (userInput.equals(BROKER_KEYWORD) && isBroker) {
-
+				System.out.print("Please enter the topic you would like to subscribe to (0-2): ");
+				byte topic = userInputScanner.nextByte();
+				commPoint.sendSUB(topic);
+			} else if (userInput.equals(UNSUBSCRIBE_KEYWORD)) {
+				System.out.print("Please enter the topic you would like to un-subscribe to (0-2): ");
+				byte topic = userInputScanner.nextByte();
+				commPoint.sendUSUB(topic);
 			} else {
 				System.out.println("ERROR! Input not recognised!");
 			}
@@ -84,6 +81,7 @@ public class UserInterface {
 		userInputScanner.close();
 	}
 
+	// determine the topic
 	public static String parseTopic(byte topic) {
 		switch (topic) {
 		case T_COMPUTERS:
