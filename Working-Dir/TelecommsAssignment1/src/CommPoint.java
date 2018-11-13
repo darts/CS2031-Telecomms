@@ -19,12 +19,9 @@ public class CommPoint extends Listener implements ReceiverInterface {
 	private int tgtPort;// what port is being transmitted to
 	private int recNum = 0;// name of active file for receiving data
 	private BufferedWriter writer;// to write received data to file
-	private boolean receiveComplete = false;// is data still being received
-	public boolean isPub;// Am I a publisher? Am I? Mom?
-	private String lastRec;// last received string
-	private byte lastTopic;// last received topic
-	private ArrayList<Byte> subList = new ArrayList<Byte>();// list of new subscriptions
-	private ArrayList<Byte> uSubList = new ArrayList<Byte>();// list of new un-subscriptions
+	public boolean isPub = false;// Am I a publisher? Am I? Mom?
+	private Broker parent; // For forwarding a file
+	private Contact contact;// For updating subscriptions
 
 	public CommPoint(String tgtName, int tgtPort, DatagramSocket srcPort) {
 		super(srcPort);// create a listener
@@ -39,10 +36,23 @@ public class CommPoint extends Listener implements ReceiverInterface {
 		}
 	}
 
-	public CommPoint(String tgtName, int tgtPort, int sPort, DatagramSocket srcPort, boolean isPub) {
+	//For a publisher and subscriber to reduce repetition
+	private CommPoint(String tgtName, int tgtPort, int sPort, DatagramSocket srcPort) {
 		this(tgtName, tgtPort, srcPort);// call super-man/constructor
-		this.isPub = isPub;
 		theSender.sendMGMT(sPort);// tell contact what port to talk to
+	}
+
+	//For a publisher contact of a broker
+	public CommPoint(String tgtName, int tgtPort, int sPort, DatagramSocket srcPort, Broker parent) {
+		this(tgtName, tgtPort, sPort, srcPort);
+		this.parent = parent;
+		this.isPub = true;
+	}
+
+	//for a subscriber contact of a broker
+	public CommPoint(String tgtName, int tgtPort, int sPort, DatagramSocket srcPort, Contact contact) {
+		this(tgtName, tgtPort, sPort, srcPort);
+		this.contact = contact;
 	}
 
 	public void startDataTransmission(String theData, byte type) {// send some data
@@ -137,6 +147,8 @@ public class CommPoint extends Listener implements ReceiverInterface {
 			theSender.sendEND_ACK();// confirm transmission over
 			System.out.println("END Received      ->Sending END_ACK");
 			System.out.println("Data Received: " + this.dataReceived);
+			if (isPub)//if data was received from a publisher, send it to subscribers
+				parent.forwardToSubs(dataReceived, topic);
 			init();// reset variables
 			try {// flush any remaining data to the drive
 				writer.flush();
@@ -144,7 +156,6 @@ public class CommPoint extends Listener implements ReceiverInterface {
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
-			this.receiveComplete = true;// game over, man
 		}
 
 	}
@@ -154,31 +165,19 @@ public class CommPoint extends Listener implements ReceiverInterface {
 		System.out.println("END_ACK Received      ->Connection Closed");
 	}
 
-	public String getData() {// if something has been received -> pass it on
-		if (this.receiveComplete == true && !this.lastRec.equals("")) {
-			this.receiveComplete = false;
-			return this.lastRec;
-		}
-		return null;// Got nothing, boss
-	}
-
-	public byte getTopic() {// what topic has been received
-		return this.lastTopic;
-	}
-
 	public void DATAReceived(byte[] data) {// got a DATA packet
 		handleWindow(data);// pass it to the window manager
 	}
 
 	public void SUBReceived(byte data) {// SUB packet received
-		if (!this.subList.contains(data))// if not already subbed (duplicate)
-			this.subList.add(data);// sub
+		if (!this.contact.subList.contains(data))// if not already subbed (duplicate)
+			this.contact.subList.add(data);// sub
 		theSender.sendEND_SUB();// confirm transmission received
 	}
 
 	public void USUBReceived(byte data) {// USUB packet received
-		if (!this.uSubList.contains(data))// if not already unsubbed (duplicate)
-			this.uSubList.add(data);// unsub
+		if (!this.contact.subList.contains(data))// if not already unsubbed (duplicate)
+			this.contact.subList.remove(data);// unsub
 		theSender.sendEND_SUB();// confirm transmission recieved
 	}
 
@@ -294,9 +293,7 @@ public class CommPoint extends Listener implements ReceiverInterface {
 	private void init() {// reset important values
 		dataToSendBool = false;
 		dataToSend = null;
-		this.lastTopic = topic;
 		topic = -1;
-		this.lastRec = this.dataReceived;
 		this.dataReceived = "";
 		this.window = new Frame[Sender.WINDOW_MAX];
 		this.windowMax = Sender.DEF_WINDOW_WIDTH;
@@ -313,18 +310,6 @@ public class CommPoint extends Listener implements ReceiverInterface {
 
 	public void MGMT_ACKReceived() {// MGMT ACK received
 		theSender.endMGMT();// end MGMT timout timer
-	}
-
-	public ArrayList<Byte> getSubs() {// return list of new subscriptions
-		ArrayList<Byte> retList = subList;
-		subList = new ArrayList<Byte>();// reset list
-		return retList;
-	}
-
-	public ArrayList<Byte> getUSubs() {// return list of new un-subscriptions
-		ArrayList<Byte> retList = uSubList;
-		uSubList = new ArrayList<Byte>();// reset list
-		return retList;
 	}
 
 	public void sendSUB(byte topic) {// send a sub packet
