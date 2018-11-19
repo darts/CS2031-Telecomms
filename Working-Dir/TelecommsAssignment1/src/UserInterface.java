@@ -7,6 +7,8 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Scanner;
 
+import javax.swing.JOptionPane;
+
 public class UserInterface {
 	public static final byte T_COMPUTERS = 0;
 	public static final byte T_TELECOMMS = 1;
@@ -47,7 +49,7 @@ public class UserInterface {
 			} else if (userInput.equals(SEND_INTERFACE_KEYWORD)) {
 				try {
 					System.out.print("Please enter the topic (0-2): ");
-					byte topic = (byte)userInputScanner.nextInt();
+					byte topic = Byte.parseByte(userInputScanner.next());
 					System.out.print("Please enter the name of the file you would like to send: ");
 					String tgtFile = userInputScanner.next();
 					File theFile = new File(tgtFile);
@@ -68,11 +70,11 @@ public class UserInterface {
 				}
 			} else if (userInput.equals(SUBSCRIBE_KEYWORD)) {
 				System.out.print("Please enter the topic you would like to subscribe to (0-2): ");
-				byte topic = userInputScanner.nextByte();
+				byte topic = Byte.parseByte(userInputScanner.next());
 				commPoint.sendSUB(topic);
 			} else if (userInput.equals(UNSUBSCRIBE_KEYWORD)) {
 				System.out.print("Please enter the topic you would like to un-subscribe to (0-2): ");
-				byte topic = userInputScanner.nextByte();
+				byte topic = Byte.parseByte(userInputScanner.next());
 				commPoint.sendUSUB(topic);
 			} else {
 				System.out.println("ERROR! Input not recognised!");
