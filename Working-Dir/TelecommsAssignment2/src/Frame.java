@@ -27,6 +27,18 @@ public class Frame {
 		this.theSocket = theSocket;
 		isPlaceHolder = false;
 	}
+	
+	public Frame(DatagramPacket thePacket) {
+		theDataPack = thePacket;
+	}
+	
+	public void forward() {
+		try {
+			theSocket.send(theDataPack);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 
 	public void send() {// send a packet
 		try {

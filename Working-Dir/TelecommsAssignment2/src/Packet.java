@@ -99,17 +99,21 @@ public class Packet {
 		return Packet.deSerialize(data).points;
 	}
 	
-	public static Integer getTgt(DatagramPacket recPack) {
-		return Packet.getTgt(recPack.getData());
+	public static Integer[] getTgtInfo(DatagramPacket recPack) {
+		return Packet.getTgtInfo(recPack.getData());
 	}
 	
-	public static Integer getTgt(byte[] data) {
-		return Packet.deSerialize(data).tgt;
+	public static Integer[] getTgtInfo(byte[] data) {
+		return Packet.deSerialize(data).tgtInfo;
 	}
 
+	public static int SENDER_ID = 0;
+	public static int SENDER_PORT = 1;
+	public static int TGT_ID = 2;
+	public static int TGT_PORT = 3;
 	private class Content {
 		byte type;
-		Integer tgt;
+		Integer[] tgtInfo;//0 = senderID, 1 = senderPort, 2 = tgtID, 3 = tgtPort
 		String data;
 		int[] points;
 

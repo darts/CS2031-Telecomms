@@ -7,10 +7,10 @@ import java.net.SocketException;
 import java.util.ArrayList;
 
 public abstract class CommPoint extends Listener {
-	public static int DEFAULT_PORT = 50000;
+	
 	public static int MGMT_PORT = 50001;
 	public Sender theSender; // for sending stuff
-	private DatagramSocket socket; // sending socket
+	public DatagramSocket socket; // sending socket
 	private String dataToSend; // what is to be sent
 	private String dataReceived = "";// what has been received
 	private String tgtName;// who is being transmitted to
@@ -18,7 +18,7 @@ public abstract class CommPoint extends Listener {
 //	private BufferedWriter writer;// to write received data to file
 
 	//for a router
-	public CommPoint(String tgtName, DatagramSocket srcPort) {
+	public CommPoint(DatagramSocket srcPort) {
 		super(srcPort);
 //		try {
 //			socket = new DatagramSocket(DEFAULT_PORT);
@@ -48,7 +48,7 @@ public abstract class CommPoint extends Listener {
 			this.DATAReceived(thePacket);
 			break;
 		case Packet.UPDATE:
-			this.UPDATEReceived();
+			this.UPDATEReceived(thePacket);
 			break;
 		case Packet.HELP:
 			this.HELPReceived();
@@ -62,7 +62,7 @@ public abstract class CommPoint extends Listener {
 	
 	public abstract void DATAReceived(DatagramPacket thePacket);
 	
-	public abstract void UPDATEReceived();
+	public abstract void UPDATEReceived(DatagramPacket thePacket);
 	
 	public abstract void HELPReceived();
 }
