@@ -35,9 +35,9 @@ public class Packet {
 	}
 
 	// create a packet with string content (for DATA)
-	public Packet(InetSocketAddress targetAddr, String data) {
+	public Packet(InetSocketAddress targetAddr, int tgt, String data) {
 		this.targetAddr = targetAddr;
-		content = new Content(DATA, data);
+		content = new Content(DATA, tgt, data);
 		contentArr = serialize(content);
 	}
 
@@ -98,9 +98,18 @@ public class Packet {
 	public static int[] getDataArr(byte[] data) {
 		return Packet.deSerialize(data).points;
 	}
+	
+	public static Integer getTgt(DatagramPacket recPack) {
+		return Packet.getTgt(recPack.getData());
+	}
+	
+	public static Integer getTgt(byte[] data) {
+		return Packet.deSerialize(data).tgt;
+	}
 
 	private class Content {
 		byte type;
+		Integer tgt;
 		String data;
 		int[] points;
 
@@ -110,7 +119,7 @@ public class Packet {
 			this.points = null;
 		}
 
-		public Content(byte type, String data) {
+		public Content(byte type, int tgt, String data) {
 			this(type);
 			this.data = data;
 		}

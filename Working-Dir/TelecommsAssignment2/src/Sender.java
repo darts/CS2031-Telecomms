@@ -25,7 +25,7 @@ public class Sender extends Thread {
 	private Packet currentPacket = null;
 
 	public void sendData(String data) {// send data
-		this.currentPacket = new Packet(tgtAddr, data);
+		this.currentPacket = new Packet(tgtAddr,tgtName, data);
 		this.start();// spin up a new thread to send data
 	}
 

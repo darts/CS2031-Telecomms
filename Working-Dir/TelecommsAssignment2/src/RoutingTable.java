@@ -1,4 +1,4 @@
-public class RoutingTable {
+public class RoutingTable {//this is used by the controller
 	public int dst;
 	public int src;
 	public int[][] rtList;
