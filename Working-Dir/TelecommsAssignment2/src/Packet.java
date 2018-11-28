@@ -102,6 +102,7 @@ public class Packet {
 	public static int TGT_ID = 1;
 	public static int SENDER_PORT = 2; //what port the packet was sent from
 	public static int NEXT_ADDR = 2;
+	public static int ROUTER_ID_LOC = 2;
 	public static int TGT_PORT = 3;
 	public static int PACKET_ID = 4;
 
