@@ -8,6 +8,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Router extends CommPoint {
+	public static String PREFIX = "R";
+	public static String[] HELLO_KEY = {"H", "H"};
+	
 	public static void main(String[] args) {
 		try {
 			new Router();
@@ -15,19 +18,20 @@ public class Router extends CommPoint {
 			e.printStackTrace();
 		}
 	}
-
+	
 	private static int DEFAULT_PORT = 50000;
 	private static int MGMT_PORT = 50001;
-	private Map<Integer, Integer> sendMap; // a map of where to send packets
-	private Frame MGMTPacket;
+	private Map<String[], String> sendMap; // a map of where to send packets
+	private Map<String[], Frame> MGMTMap;
 	private DatagramSocket MGMTSocket = new DatagramSocket(MGMT_PORT);
 	private InetSocketAddress MGMTAddr = new InetSocketAddress(Controller.ID, Controller.COMM_PORT);
-	private Map<Integer, ArrayList<DatagramPacket>> waitingList;
+	private Map<String[], ArrayList<DatagramPacket>> waitingList;
 
 	public Router() throws SocketException {
 		super(new DatagramSocket(DEFAULT_PORT));
-		sendMap = new HashMap<Integer, Integer>();
-		waitingList = new HashMap<Integer, ArrayList<DatagramPacket>>();
+		sendMap = new HashMap<String[], String>();
+		waitingList = new HashMap<String[], ArrayList<DatagramPacket>>();
+		MGMTMap = new HashMap<String[], Frame>();
 		sendHELLO();
 	}
 	
@@ -37,29 +41,29 @@ public class Router extends CommPoint {
 
 	private void sendHELLO() {
 		System.out.println("Sending HELLO packet...");
-		MGMTPacket = new Frame(new Packet(MGMTAddr, Packet.HELLO), MGMTSocket);
-		MGMTPacket.send();
+		MGMTMap.put(HELLO_KEY, new Frame(new Packet(MGMTAddr, Packet.HELLO), MGMTSocket));
+		MGMTMap.get(HELLO_KEY).send();
 	}
 
 	public void HELLOReceived() {
 		System.out.println("HELLO Received... Connected To Controller.");
-		MGMTPacket.cancel();
+		MGMTMap.get(HELLO_KEY).cancel();
 	}
 
 	public synchronized boolean DATAReceived(DatagramPacket thePacket) {
 		System.out.println("DATA Received.");
-		Integer[] tgtData = Packet.getTgtInfo(thePacket);
-		Integer next = lookUpNext(tgtData[Packet.TGT_ID]);
+		String[] tgtData = Packet.getTgtInfo(thePacket);
+		String next = lookUpNext(new String[] {tgtData[Packet.SENDER_ID],tgtData[Packet.TGT_ID]});
 		if (next == null) {
 			System.out.println("DST Unknown... Asking Controller For INFO.");
-			addToWaitingList(tgtData[Packet.TGT_ID], thePacket);
-			getHELP();
+			addToWaitingList(new String[] {tgtData[Packet.SENDER_ID],tgtData[Packet.TGT_ID]}, thePacket);
+			getHELP(tgtData[Packet.SENDER_ID],tgtData[Packet.TGT_ID]);
 			return false;
 		} else {
 			System.out.println("DST Known... Preparing To Forward.");
 			Integer tgtPort;
 			if (next.equals(tgtData[Packet.TGT_ID]))
-				tgtPort = tgtData[Packet.TGT_PORT];
+				tgtPort = Integer.parseInt(tgtData[Packet.TGT_PORT]);
 			else
 				tgtPort = Router.DEFAULT_PORT;
 			thePacket.setSocketAddress(new InetSocketAddress(next.toString(), tgtPort));
@@ -68,22 +72,24 @@ public class Router extends CommPoint {
 		}
 	}
 
-	public void getHELP() {
-		MGMTPacket = new Frame(new Packet(MGMTAddr, Packet.HELLO), MGMTSocket);
-		MGMTPacket.send();
-	}
+	public void getHELP(String senderID, String targetID) {
+		String[] helpData = {senderID, targetID};
+		MGMTMap.put(helpData, new Frame(new Packet(MGMTAddr, Packet.HELP, helpData), MGMTSocket));
+		MGMTMap.get(helpData).send();
+		}
 
 	public void UPDATEReceived(DatagramPacket thePacket) {
+		String[] upDateData = Packet.getTgtInfo(thePacket);
+		String[] key = {upDateData[Packet.SENDER_ID], upDateData[Packet.TGT_ID]};
 		try {
-			MGMTPacket.cancel();
+			MGMTMap.get(key).cancel();
 		} catch (Exception e) {
 		}
-		Integer[] upDateData = Packet.getTgtInfo(thePacket);
-		updateTable(upDateData[Packet.SENDER_ID], upDateData[Packet.TGT_ID]);
-		sendWaiting(upDateData[Packet.TGT_ID]);
+		updateTable(key, upDateData[Packet.NEXT_ADDR]);
+		sendWaiting(key);
 	}
 	
-	private void addToWaitingList(Integer key, DatagramPacket thePacket) {
+	private void addToWaitingList(String[] key, DatagramPacket thePacket) {
 		ArrayList<DatagramPacket> list = waitingList.get(key);
 		if(list == null)
 			list = new ArrayList<DatagramPacket>();
@@ -93,7 +99,7 @@ public class Router extends CommPoint {
 		waitingList.put(key, list);
 	}
 	
-	public void sendWaiting(Integer key) {
+	public void sendWaiting(String[] key) {
 		ArrayList<DatagramPacket> list = waitingList.get(key);
 		if(list != null) {
 			for(DatagramPacket lPacket : list)
@@ -105,12 +111,12 @@ public class Router extends CommPoint {
 		System.out.println("HELP Request Received... Ignoring.");
 	}
 
-	private Integer lookUpNext(Integer tgt) {
+	private String lookUpNext(String[] tgt) {
 		return sendMap.get(tgt);
 	}
 
-	private void updateTable(Integer dst, Integer next) {
-		sendMap.put(dst, next);
+	private void updateTable(String[] key, String next) {
+		sendMap.put(key, next);
 	}
 
 	private void forward(DatagramPacket thePacket) {

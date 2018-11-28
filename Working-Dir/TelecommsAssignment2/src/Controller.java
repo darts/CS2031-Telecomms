@@ -1,4 +1,6 @@
 import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.SocketException;
 
 public class Controller extends CommPoint{
 
@@ -9,6 +11,12 @@ public class Controller extends CommPoint{
 	
 	public static String ID = "CONTROLLER";
 	public static int COMM_PORT = 50505;
+	private RoutingTable routingTable;
+	
+	public Controller() throws SocketException {
+		super(new DatagramSocket(COMM_PORT));
+		initTable();
+	}
 
 	public void ACKReceived(DatagramPacket thePacket) {
 		
@@ -30,6 +38,22 @@ public class Controller extends CommPoint{
 		
 	}
 	
+	private void initTable() {
+		routingTable = new RoutingTable();
+		String dst = Endpoint.PREFIX + "1";
+		String src = Endpoint.PREFIX + "2";
+		String[] router = {Router.PREFIX + "2", Router.PREFIX + "1"};
+		String[] inList = {Endpoint.PREFIX + "2", Router.PREFIX + "2"};
+		String[] outList = {Router.PREFIX + "1", Endpoint.PREFIX + "1"};
+		routingTable.addPath(dst, src, router, inList, outList);
+		
+		dst = Endpoint.PREFIX + "2";
+		src = Endpoint.PREFIX + "1";
+		router = new String[] {Router.PREFIX + "1", Router.PREFIX + "2"};
+		inList = new String[] {Endpoint.PREFIX + "1", Router.PREFIX + "1"};
+		outList = new String[] {Router.PREFIX + "2", Endpoint.PREFIX + "2"};
+		routingTable.addPath(dst, src, router, inList, outList);
+	}
 	
 
 }

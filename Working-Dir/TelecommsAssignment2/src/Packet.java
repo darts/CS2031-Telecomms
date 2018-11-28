@@ -28,14 +28,14 @@ public class Packet {
 	}
 
 	// create a packet with a set of integers (for UPDATE, HELP)
-	public Packet(InetSocketAddress targetAddr, byte type, Integer[] data) {
+	public Packet(InetSocketAddress targetAddr, byte type, String[] data) {
 		this.targetAddr = targetAddr;
 		content = new Content(type, data);
 		contentArr = serialize(content);
 	}
 
 	// create a packet with string content (for DATA)
-	public Packet(InetSocketAddress targetAddr, Integer[] tgtInfo, String data) {
+	public Packet(InetSocketAddress targetAddr, String[] tgtInfo, String data) {
 		this.targetAddr = targetAddr;
 		content = new Content(DATA, tgtInfo, data);
 		contentArr = serialize(content);
@@ -90,23 +90,24 @@ public class Packet {
 		return Packet.deSerialize(data).type;
 	}
 
-	public static Integer[] getTgtInfo(DatagramPacket recPack) {
+	public static String[] getTgtInfo(DatagramPacket recPack) {
 		return Packet.getTgtInfo(recPack.getData());
 	}
 
-	public static Integer[] getTgtInfo(byte[] data) {
+	public static String[] getTgtInfo(byte[] data) {
 		return Packet.deSerialize(data).tgtInfo;
 	}
 
 	public static int SENDER_ID = 0;
-	public static int SENDER_PORT = 1;
-	public static int TGT_ID = 2;
+	public static int TGT_ID = 1;
+	public static int SENDER_PORT = 2; //what port the packet was sent from
+	public static int NEXT_ADDR = 2;
 	public static int TGT_PORT = 3;
 	public static int PACKET_ID = 4;
 
 	private class Content {
 		byte type;
-		Integer[] tgtInfo;// 0 = senderID, 1 = senderPort, 2 = tgtID, 3 = tgtPort, 4 = packetID
+		String[] tgtInfo;// 0 = senderID, 1 = senderPort, 2 = tgtID, 3 = tgtPort, 4 = packetID
 		String data;
 
 		public Content(byte type) {
@@ -115,13 +116,13 @@ public class Packet {
 			this.tgtInfo = null;
 		}
 
-		public Content(byte type, Integer[] tgtInfo, String data) {
+		public Content(byte type, String[] tgtInfo, String data) {
 			this(type);
 			this.data = data;
 			this.tgtInfo = tgtInfo;
 		}
 
-		public Content(byte type, Integer[] tgtInfo) {
+		public Content(byte type, String[] tgtInfo) {
 			this(type);
 			this.tgtInfo = tgtInfo;
 		}
