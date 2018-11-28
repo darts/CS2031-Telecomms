@@ -4,6 +4,7 @@ import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 
 public class Router extends CommPoint {
@@ -17,20 +18,21 @@ public class Router extends CommPoint {
 
 	private static int DEFAULT_PORT = 50000;
 	private static int MGMT_PORT = 50001;
-	private int ID;// this router's unique ID
 	private Map<Integer, Integer> sendMap; // a map of where to send packets
 	private Frame MGMTPacket;
 	private DatagramSocket MGMTSocket = new DatagramSocket(MGMT_PORT);
 	private InetSocketAddress MGMTAddr = new InetSocketAddress(Controller.ID, Controller.COMM_PORT);
-	private ArrayList<DatagramPacket> waitingList = new ArrayList<DatagramPacket>();
+	private Map<Integer, ArrayList<DatagramPacket>> waitingList;
 
 	public Router() throws SocketException {
 		super(new DatagramSocket(DEFAULT_PORT));
+		sendMap = new HashMap<Integer, Integer>();
+		waitingList = new HashMap<Integer, ArrayList<DatagramPacket>>();
 		sendHELLO();
 	}
-
-	public void ACKReceived() {// Should never receive an ACK
-		System.err.println("ACK Recieved... Ignoring.");
+	
+	public void ACKReceived(DatagramPacket thePacket) {//Treat ACK as normal packet
+		DATAReceived(thePacket);
 	}
 
 	private void sendHELLO() {
@@ -50,7 +52,7 @@ public class Router extends CommPoint {
 		Integer next = lookUpNext(tgtData[Packet.TGT_ID]);
 		if (next == null) {
 			System.out.println("DST Unknown... Asking Controller For INFO.");
-			waitingList.add(thePacket);
+			addToWaitingList(tgtData[Packet.TGT_ID], thePacket);
 			getHELP();
 			return false;
 		} else {
@@ -78,17 +80,29 @@ public class Router extends CommPoint {
 		}
 		Integer[] upDateData = Packet.getTgtInfo(thePacket);
 		updateTable(upDateData[Packet.SENDER_ID], upDateData[Packet.TGT_ID]);
-		sendWaiting();
+		sendWaiting(upDateData[Packet.TGT_ID]);
 	}
 	
-	public void sendWaiting() {
-		for(DatagramPacket thePacket : waitingList) {
-			if(DATAReceived(thePacket))
+	private void addToWaitingList(Integer key, DatagramPacket thePacket) {
+		ArrayList<DatagramPacket> list = waitingList.get(key);
+		if(list == null)
+			list = new ArrayList<DatagramPacket>();
+		else
+			waitingList.remove(key);
+		list.add(thePacket);
+		waitingList.put(key, list);
+	}
+	
+	public void sendWaiting(Integer key) {
+		ArrayList<DatagramPacket> list = waitingList.get(key);
+		if(list != null) {
+			for(DatagramPacket lPacket : list)
+				DATAReceived(lPacket);
 		}
 	}
 
 	public void HELPReceived() {
-
+		System.out.println("HELP Request Received... Ignoring.");
 	}
 
 	private Integer lookUpNext(Integer tgt) {

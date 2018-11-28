@@ -102,10 +102,11 @@ public class Packet {
 	public static int SENDER_PORT = 1;
 	public static int TGT_ID = 2;
 	public static int TGT_PORT = 3;
+	public static int PACKET_ID = 4;
 
 	private class Content {
 		byte type;
-		Integer[] tgtInfo;// 0 = senderID, 1 = senderPort, 2 = tgtID, 3 = tgtPort
+		Integer[] tgtInfo;// 0 = senderID, 1 = senderPort, 2 = tgtID, 3 = tgtPort, 4 = packetID
 		String data;
 
 		public Content(byte type) {

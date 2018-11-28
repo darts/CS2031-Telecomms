@@ -21,7 +21,7 @@ public abstract class CommPoint extends Listener {
 		byte type = Packet.getType(thePacket);
 		switch (type) {
 		case Packet.ACK:
-			this.ACKReceived();
+			this.ACKReceived(thePacket);
 			break;
 		case Packet.HELLO:
 			this.HELLOReceived();
@@ -38,7 +38,7 @@ public abstract class CommPoint extends Listener {
 		}
 	}
 
-	public abstract void ACKReceived();
+	public abstract void ACKReceived(DatagramPacket thePacket);
 	
 	public abstract void HELLOReceived();
 	
