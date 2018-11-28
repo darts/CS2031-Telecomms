@@ -13,7 +13,14 @@ public abstract class Listener extends Thread{
 	public Listener(DatagramSocket socket) {
 		this.socket = socket;
 	}
+	public Listener() {
+	}
+	
 	public Listener(int port){
+		init(port);
+	}
+	
+	public void init(int port) {
 		this.port = port;
 		try {
 			this.socket = new DatagramSocket(port);//create listening port

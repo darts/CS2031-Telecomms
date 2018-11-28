@@ -20,24 +20,24 @@ public class Packet {
 	private InetSocketAddress targetAddr; // who to send to
 	private Content content;
 
-	// create a packet with no content (for HELLO, ACK, HELP)
+	// create a packet with no content (for HELLO, ACK)
 	public Packet(InetSocketAddress targetAddr, byte type) {
 		this.targetAddr = targetAddr;
 		content = new Content(type);
 		contentArr = serialize(content);
 	}
 
-	// create a packet with a set of integers (for UPDATE)
-	public Packet(InetSocketAddress targetAddr, byte type, int[] data) {
+	// create a packet with a set of integers (for UPDATE, HELP)
+	public Packet(InetSocketAddress targetAddr, byte type, Integer[] data) {
 		this.targetAddr = targetAddr;
 		content = new Content(type, data);
 		contentArr = serialize(content);
 	}
 
 	// create a packet with string content (for DATA)
-	public Packet(InetSocketAddress targetAddr, int tgt, String data) {
+	public Packet(InetSocketAddress targetAddr, Integer[] tgtInfo, String data) {
 		this.targetAddr = targetAddr;
-		content = new Content(DATA, tgt, data);
+		content = new Content(DATA, tgtInfo, data);
 		contentArr = serialize(content);
 	}
 
@@ -53,13 +53,13 @@ public class Packet {
 		}
 		return null;
 	}
-	
-	//turn a byte array into a Content object
+
+	// turn a byte array into a Content object
 	private static Content deSerialize(byte[] data) {
 		ByteArrayInputStream inStream = new ByteArrayInputStream(data);
 		try {
 			ObjectInputStream objIn = new ObjectInputStream(inStream);
-			return (Content)objIn.readObject();
+			return (Content) objIn.readObject();
 		} catch (Exception e) {
 		}
 		return null;
@@ -79,7 +79,7 @@ public class Packet {
 	public static String getContents(byte[] data) {
 		return Packet.deSerialize(data).data;
 	}
-	
+
 	// get packet type
 	public static byte getType(DatagramPacket recPack) {
 		return Packet.getType(recPack.getData());
@@ -90,19 +90,10 @@ public class Packet {
 		return Packet.deSerialize(data).type;
 	}
 
-	public static int[] getDataArr(DatagramPacket recPack) {
-		return Packet.getDataArr(recPack.getData());
-	}
-	
-	// get int[]
-	public static int[] getDataArr(byte[] data) {
-		return Packet.deSerialize(data).points;
-	}
-	
 	public static Integer[] getTgtInfo(DatagramPacket recPack) {
 		return Packet.getTgtInfo(recPack.getData());
 	}
-	
+
 	public static Integer[] getTgtInfo(byte[] data) {
 		return Packet.deSerialize(data).tgtInfo;
 	}
@@ -111,26 +102,27 @@ public class Packet {
 	public static int SENDER_PORT = 1;
 	public static int TGT_ID = 2;
 	public static int TGT_PORT = 3;
+
 	private class Content {
 		byte type;
-		Integer[] tgtInfo;//0 = senderID, 1 = senderPort, 2 = tgtID, 3 = tgtPort
+		Integer[] tgtInfo;// 0 = senderID, 1 = senderPort, 2 = tgtID, 3 = tgtPort
 		String data;
-		int[] points;
 
 		public Content(byte type) {
 			this.type = type;
 			this.data = null;
-			this.points = null;
+			this.tgtInfo = null;
 		}
 
-		public Content(byte type, int tgt, String data) {
+		public Content(byte type, Integer[] tgtInfo, String data) {
 			this(type);
 			this.data = data;
+			this.tgtInfo = tgtInfo;
 		}
 
-		public Content(byte type, int[] points) {
+		public Content(byte type, Integer[] tgtInfo) {
 			this(type);
-			this.points = points;
+			this.tgtInfo = tgtInfo;
 		}
 	}
 }

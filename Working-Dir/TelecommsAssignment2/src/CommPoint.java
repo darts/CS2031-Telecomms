@@ -8,30 +8,12 @@ import java.util.ArrayList;
 
 public abstract class CommPoint extends Listener {
 	
-	public static int MGMT_PORT = 50001;
-	public Sender theSender; // for sending stuff
-	public DatagramSocket socket; // sending socket
-	private String dataToSend; // what is to be sent
-	private String dataReceived = "";// what has been received
-	private String tgtName;// who is being transmitted to
-//	private int recNum = 0;// name of active file for receiving data
-//	private BufferedWriter writer;// to write received data to file
-
 	//for a router
 	public CommPoint(DatagramSocket srcPort) {
 		super(srcPort);
-//		try {
-//			socket = new DatagramSocket(DEFAULT_PORT);
-//		} catch (SocketException e) {
-//			e.printStackTrace();
-//		}
-		this.tgtName = tgtName;
-		this.socket = srcPort;
 	}
-
-	public void startDataTransmission(String theData, byte type) {// send some data
-		dataToSend = theData;
-		byte[] theType = { type };
+	
+	public CommPoint() {
 	}
 
 	// determine what type of packet has been received.
@@ -60,7 +42,7 @@ public abstract class CommPoint extends Listener {
 	
 	public abstract void HELLOReceived();
 	
-	public abstract void DATAReceived(DatagramPacket thePacket);
+	public abstract boolean DATAReceived(DatagramPacket thePacket);
 	
 	public abstract void UPDATEReceived(DatagramPacket thePacket);
 	

@@ -10,34 +10,11 @@ public class Frame {
 	Timer timeoutTimer;
 	DatagramPacket theDataPack;
 	public static final int TIMEOUT_DELAY = 5000;
-	public boolean isPlaceHolder;
 	String data;
-
-	public Frame() {
-		isPlaceHolder = true;
-	}
-
-	public Frame(String data) {
-		this.data = data;
-		isPlaceHolder = false;
-	}
 
 	public Frame(Packet thePack, DatagramSocket theSocket) {
 		this.thePack = thePack;
 		this.theSocket = theSocket;
-		isPlaceHolder = false;
-	}
-	
-	public Frame(DatagramPacket thePacket) {
-		theDataPack = thePacket;
-	}
-	
-	public void forward() {
-		try {
-			theSocket.send(theDataPack);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
 	}
 
 	public void send() {// send a packet
