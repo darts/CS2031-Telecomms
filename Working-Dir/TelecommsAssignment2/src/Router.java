@@ -12,24 +12,26 @@ public class Router extends CommPoint {
 	
 	public static void main(String[] args) {
 		try {
-			new Router(args[0]);
+			new Router(Integer.parseInt(args[0]));
 		} catch (SocketException e) {
 			e.printStackTrace();
 		}
 	}
 	
-	private static int DEFAULT_PORT = 50000;
-	private static int MGMT_PORT = 50001;
+	public static int DEFAULT_PORT = 50000;
+	public static int MGMT_PORT = 50001;
 	public String ID;
+	public int rtNum;
 	private Map<String[], String> sendMap; // a map of where to send packets
 	private Map<String[], ArrayList<DatagramPacket>> waitingList;
 	private ManagementController manager;
 
-	public Router(String ID) throws SocketException {
+	public Router(int rtNum) throws SocketException {
 		super(new DatagramSocket(DEFAULT_PORT));
 		sendMap = new HashMap<String[], String>();
 		waitingList = new HashMap<String[], ArrayList<DatagramPacket>>();
-		this.ID = ID;
+		this.ID = PREFIX + rtNum;
+		this.rtNum = rtNum;
 		manager = new ManagementController(MGMT_PORT, this);
 		manager.sendHELLO();
 	}
@@ -79,7 +81,7 @@ public class Router extends CommPoint {
 		}
 	}
 
-	public void HELPReceived() {
+	public void HELPReceived(DatagramPacket thePacket) {
 		System.out.println("HELP Request Received... Ignoring.");
 	}
 
@@ -99,7 +101,7 @@ public class Router extends CommPoint {
 		}
 	}
 
-	public void HELLOReceived() {
+	public void HELLOReceived(DatagramPacket thePacket) {
 	}
 
 	public void UPDATEReceived(DatagramPacket thePacket) {		

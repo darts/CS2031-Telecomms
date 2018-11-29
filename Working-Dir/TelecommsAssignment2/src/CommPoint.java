@@ -1,10 +1,5 @@
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.net.SocketException;
-import java.util.ArrayList;
 
 public abstract class CommPoint extends Listener {
 	
@@ -24,7 +19,7 @@ public abstract class CommPoint extends Listener {
 			this.ACKReceived(thePacket);
 			break;
 		case Packet.HELLO:
-			this.HELLOReceived();
+			this.HELLOReceived(thePacket);
 			break;
 		case Packet.DATA:
 			this.DATAReceived(thePacket);
@@ -33,18 +28,18 @@ public abstract class CommPoint extends Listener {
 			this.UPDATEReceived(thePacket);
 			break;
 		case Packet.HELP:
-			this.HELPReceived();
+			this.HELPReceived(thePacket);
 			break;
 		}
 	}
 
 	public abstract void ACKReceived(DatagramPacket thePacket);
 	
-	public abstract void HELLOReceived();
+	public abstract void HELLOReceived(DatagramPacket thePacket);
 	
 	public abstract boolean DATAReceived(DatagramPacket thePacket);
 	
 	public abstract void UPDATEReceived(DatagramPacket thePacket);
 	
-	public abstract void HELPReceived();
+	public abstract void HELPReceived(DatagramPacket thePacket);
 }

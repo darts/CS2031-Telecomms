@@ -9,7 +9,7 @@ public class Frame {
 	DatagramSocket theSocket;
 	Timer timeoutTimer;
 	DatagramPacket theDataPack;
-	public static final int TIMEOUT_DELAY = 5000;
+	public static final int TIMEOUT_DELAY = 1000;
 	String data;
 
 	public Frame(Packet thePack, DatagramSocket theSocket) {

@@ -18,11 +18,11 @@ public class ManagementController extends CommPoint{
 	
 	public void sendHELLO() {
 		System.out.println("Sending HELLO packet...");
-		MGMTMap.put(HELLO_KEY, new Frame(new Packet(MGMTAddr, Packet.HELLO), socket));
+		MGMTMap.put(HELLO_KEY, new Frame(new Packet(MGMTAddr, Packet.HELLO, parent.rtNum), socket));
 		MGMTMap.get(HELLO_KEY).send();
 	}
 
-	public void HELLOReceived() {
+	public void HELLOReceived(DatagramPacket thePacket) {
 		System.out.println("HELLO Received... Connected To Controller.");
 		MGMTMap.get(HELLO_KEY).cancel();
 	}
@@ -60,7 +60,7 @@ public class ManagementController extends CommPoint{
 		return false;
 	}
 	
-	public void HELPReceived() {		
+	public void HELPReceived(DatagramPacket thePacket) {		
 	}
 
 }

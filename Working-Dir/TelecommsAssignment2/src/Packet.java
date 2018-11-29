@@ -20,12 +20,13 @@ public class Packet {
 	private InetSocketAddress targetAddr; // who to send to
 	private Content content;
 
-	// create a packet with no content (for HELLO, ACK)
-	public Packet(InetSocketAddress targetAddr, byte type) {
+	// create a packet with int content content (for HELLO)
+	public Packet(InetSocketAddress targetAddr, byte type, int rtNum) {
 		this.targetAddr = targetAddr;
-		content = new Content(type);
+		content = new Content(type, new String[] {Integer.toString(rtNum)});
 		contentArr = serialize(content);
 	}
+	
 
 	// create a packet with a set of integers (for UPDATE, HELP)
 	public Packet(InetSocketAddress targetAddr, byte type, String[] data) {
