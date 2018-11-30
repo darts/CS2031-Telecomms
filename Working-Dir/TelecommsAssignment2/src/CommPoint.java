@@ -7,9 +7,6 @@ public abstract class CommPoint extends Listener {
 	public CommPoint(DatagramSocket srcPort) {
 		super(srcPort);
 	}
-	
-	public CommPoint() {
-	}
 
 	// determine what type of packet has been received.
 	public void packetRecieved(DatagramPacket thePacket) {
