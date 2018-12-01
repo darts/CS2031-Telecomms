@@ -1,3 +1,6 @@
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
@@ -7,12 +10,14 @@ import java.util.Scanner;
 public class Endpoint extends CommPoint {
 	public static String PREFIX = "E";
 	public static int DEFAULT_PORT = 50000;
-//	public static String START = "Hello World.";
 	public static String STRT_ID = "-1";
 
 	public static void main(String[] args) {
-		// TODO Auto-generated method stub
-
+		try {
+			new Endpoint(Integer.parseInt(args[0]));
+		} catch (SocketException e) {
+			e.printStackTrace();
+		}
 	}
 
 	private Frame activePacket;
@@ -21,6 +26,8 @@ public class Endpoint extends CommPoint {
 	private InetSocketAddress tgtAddr;
 	private String[] commData;
 	private String ID;
+	private boolean transmissionComplete;
+	private int transmissionFileName = 0;
 
 	public Endpoint(int eNum) throws SocketException {
 		super(new DatagramSocket(DEFAULT_PORT));
@@ -32,7 +39,12 @@ public class Endpoint extends CommPoint {
 	}
 
 	public void ACKReceived(DatagramPacket thePacket) {
-
+		String[] contactData = Packet.getTgtInfo(thePacket);
+		if (expectingComms(contactData) && contactData[Packet.PACKET_ID].equals(Packet.DATA_ID)) {
+			if (!transmissionComplete)
+				sendAck(false);
+			reset();
+		}
 	}
 
 	public void HELLOReceived(DatagramPacket thePacket) {
@@ -41,6 +53,7 @@ public class Endpoint extends CommPoint {
 			if (contactData[Packet.PACKET_ID].equals(STRT_ID)) {
 				this.tgtAddr = new InetSocketAddress(contactData[Packet.SENDER_ID],
 						Integer.parseInt(contactData[Packet.SENDER_PORT]));
+				this.commData = new String[] { contactData[Packet.SENDER_ID], contactData[Packet.SENDER_PORT] };
 				sendStart(contactData[Packet.SENDER_ID]);
 			} else
 				System.err.println("Corrupt Packet Received...");
@@ -53,8 +66,19 @@ public class Endpoint extends CommPoint {
 	}
 
 	public boolean DATAReceived(DatagramPacket thePacket) {
-		if (connectionActive) {
-			
+		String[] contactData = Packet.getTgtInfo(thePacket);
+		if (connectionActive && expectingComms(contactData)) {// are we expecting contact
+			try {
+				this.activePacket.cancel();
+				BufferedWriter writer = new BufferedWriter(
+						new FileWriter(Integer.toString(this.transmissionFileName++)));
+				writer.write(Packet.getContents(thePacket));
+				writer.flush();
+				writer.close();
+				sendAck(true);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 		return true;
 	}
@@ -62,13 +86,27 @@ public class Endpoint extends CommPoint {
 	public void UPDATEReceived(DatagramPacket thePacket) {// should not receive this packet
 	}
 
-	public void HELPReceived(DatagramPacket thePacket) {
+	public void HELPReceived(DatagramPacket thePacket) {// should not receive this packet
 	}
-	
+
 	private void sendData() {
-		
+		Packet tmp = new Packet(this.tgtAddr, this.generateDataString(commData[Packet.SENDER_ID], Packet.DATA_ID),
+				this.dataToSend);
+		activePacket = new Frame(tmp, socket);
+		activePacket.send();
 	}
-	
+
+	private void sendAck(boolean timerActive) {
+		Packet tmp = new Packet(this.tgtAddr, Packet.ACK,
+				this.generateDataString(commData[Packet.SENDER_ID], Packet.DATA_ID));
+		activePacket = new Frame(tmp, socket);
+		activePacket.send();
+		this.transmissionComplete = true;
+		if (!timerActive) {
+			activePacket.cancel();
+		}
+	}
+
 	private boolean expectingComms(String[] contactData) {
 		if (this.commData[Packet.SENDER_ID].equals(contactData[Packet.SENDER_ID])
 				&& this.commData[Packet.SENDER_PORT].equals(contactData[Packet.SENDER_PORT]))
@@ -94,6 +132,16 @@ public class Endpoint extends CommPoint {
 	private String[] generateDataString(String tgtID, String seqNum) {
 		return new String[] { this.ID, Integer.toString(this.port), tgtID, Integer.toString(Endpoint.DEFAULT_PORT),
 				seqNum };
+	}
+
+	private void reset() {
+		activePacket.cancel();
+		activePacket = null;
+		connectionActive = false;
+		dataToSend = null;
+		tgtAddr = null;
+		commData = null;
+		transmissionComplete = false;
 	}
 
 	private class UserInterface extends Thread {

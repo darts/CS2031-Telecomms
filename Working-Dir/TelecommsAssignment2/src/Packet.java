@@ -15,6 +15,8 @@ public class Packet {
 	public static final byte HELP = 2; // router doesn't know where to send packet
 	public static final byte UPDATE = 3;// sent by controller to router with new path info
 	public static final byte DATA = 4; // sent by client
+	
+	public static final String DATA_ID = "1";
 
 	public byte[] contentArr = null; // char[] representation of content
 	private InetSocketAddress targetAddr; // who to send to
