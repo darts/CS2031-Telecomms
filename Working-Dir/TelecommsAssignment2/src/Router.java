@@ -102,6 +102,7 @@ public class Router extends CommPoint {
 	}
 
 	public void HELLOReceived(DatagramPacket thePacket) {
+		DATAReceived(thePacket);
 	}
 
 	public void UPDATEReceived(DatagramPacket thePacket) {		
