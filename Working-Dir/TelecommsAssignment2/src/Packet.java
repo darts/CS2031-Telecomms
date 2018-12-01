@@ -20,7 +20,7 @@ public class Packet {
 	private InetSocketAddress targetAddr; // who to send to
 	private Content content;
 
-	// create a packet with int content content (for HELLO)
+	// create a packet with int content (for HELLO)
 	public Packet(InetSocketAddress targetAddr, byte type, int rtNum) {
 		this.targetAddr = targetAddr;
 		content = new Content(type, new String[] {Integer.toString(rtNum)});
@@ -28,7 +28,7 @@ public class Packet {
 	}
 	
 
-	// create a packet with a set of integers (for UPDATE, HELP)
+	// create a packet with a set of strings (for UPDATE, HELP, ACK)
 	public Packet(InetSocketAddress targetAddr, byte type, String[] data) {
 		this.targetAddr = targetAddr;
 		content = new Content(type, data);
@@ -41,7 +41,14 @@ public class Packet {
 		content = new Content(DATA, tgtInfo, data);
 		contentArr = serialize(content);
 	}
-
+	
+//	//For ACK
+//	public Packet(InetSocketAddress targetAddr, String[] tgtInfo) {
+//		this.targetAddr = targetAddr;
+//		content = new Content(ACK, tgtInfo);
+//		contentArr = serialize(content);
+//	}
+	
 	// turn an object into a byte array
 	private static byte[] serialize(Content data) {
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();

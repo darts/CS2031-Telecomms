@@ -9,8 +9,10 @@ public class Frame {
 	DatagramSocket theSocket;
 	Timer timeoutTimer;
 	DatagramPacket theDataPack;
-	public static final int TIMEOUT_DELAY = 1000;
+	public static final int TIMEOUT_DELAY = 2000;
+	public static final int SENT_MAX = 10; // how many times can this be resent
 	String data;
+	private int sentCounter = 0;
 
 	public Frame(Packet thePack, DatagramSocket theSocket) {
 		this.thePack = thePack;
@@ -19,15 +21,17 @@ public class Frame {
 
 	public void send() {// send a packet
 		try {
-			theDataPack = thePack.toDatagramPacket();// packet -> datagramPacket
-			timeoutTimer = new Timer();// start timeout timer
-			timeoutTimer.schedule(new TimerTask() {// tell the timer what to do
-				public void run() {
-					timeoutTimer.cancel();// cancel existing timer
-					send();// resend
-				}
-			}, Frame.TIMEOUT_DELAY);// Resend in x seconds
-			theSocket.send(theDataPack);// send it! (for reals tho)
+			if (sentCounter <= Frame.SENT_MAX) {
+				theDataPack = thePack.toDatagramPacket();// packet -> datagramPacket
+				timeoutTimer = new Timer();// start timeout timer
+				timeoutTimer.schedule(new TimerTask() {// tell the timer what to do
+					public void run() {
+						timeoutTimer.cancel();// cancel existing timer
+						send();// resend
+					}
+				}, Frame.TIMEOUT_DELAY);// Resend in x seconds
+				theSocket.send(theDataPack);// send it! (for reals tho)
+			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
