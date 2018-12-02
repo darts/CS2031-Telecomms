@@ -26,6 +26,7 @@ public class Controller extends CommPoint {
 		super(new DatagramSocket(COMM_PORT));
 		initTable();
 		packetMap = new HashMap<String[], Frame>();
+		this.start();
 	}
 
 	public void ACKReceived(DatagramPacket thePacket) {
