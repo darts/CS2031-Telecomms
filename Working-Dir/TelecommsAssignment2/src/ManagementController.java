@@ -18,7 +18,8 @@ public class ManagementController extends CommPoint{
 	
 	public void sendHELLO() {
 		System.out.println("Sending HELLO packet...");
-		MGMTMap.put(HELLO_KEY, new Frame(new Packet(MGMTAddr, Packet.HELLO, parent.rtNum), socket));
+		Packet toSend = new Packet(MGMTAddr, Packet.HELLO, parent.rtNum);
+		MGMTMap.put(HELLO_KEY, new Frame(toSend, socket));
 		MGMTMap.get(HELLO_KEY).send();
 	}
 

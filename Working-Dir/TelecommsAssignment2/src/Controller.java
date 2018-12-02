@@ -8,8 +8,11 @@ import java.util.Map;
 public class Controller extends CommPoint {
 
 	public static void main(String[] args) {
-		// TODO Auto-generated method stub
-
+		try {
+			new Controller();
+		} catch (SocketException e) {
+			e.printStackTrace();
+		}
 	}
 
 	private static int NUM_OF_ROUTERS = 2;
