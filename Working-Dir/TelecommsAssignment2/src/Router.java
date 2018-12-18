@@ -12,12 +12,13 @@ public class Router extends CommPoint {
 	
 	public static void main(String[] args) {
 		try {
-			new Router(1);
+			new Router(Integer.parseInt(args[0]));
 		} catch (SocketException e) {
 			e.printStackTrace();
 		}
 	}
 	
+//	public static String ID = "127.0.0.1";
 	public static int DEFAULT_PORT = 50000;
 	public static int MGMT_PORT = 50001;
 	public String ID;

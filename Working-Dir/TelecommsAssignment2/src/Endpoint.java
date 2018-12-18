@@ -28,6 +28,7 @@ public class Endpoint extends CommPoint {
 	private String ID;
 	private boolean transmissionComplete;
 	private int transmissionFileName = 0;
+	private String defGateway;
 
 	public Endpoint(int eNum) throws SocketException {
 		super(new DatagramSocket(DEFAULT_PORT));
@@ -35,6 +36,7 @@ public class Endpoint extends CommPoint {
 		connectionActive = false;
 		dataToSend = null;
 		ID = Endpoint.PREFIX + Integer.toString(eNum);
+		defGateway = Router.PREFIX + eNum;
 		new UserInterface(this);
 	}
 
@@ -116,7 +118,7 @@ public class Endpoint extends CommPoint {
 
 	public synchronized void startTransmission(String dst, String data) {
 		dataToSend = data;// store what needs to be sent
-		this.tgtAddr = new InetSocketAddress(dst, Endpoint.DEFAULT_PORT);
+		this.tgtAddr = new InetSocketAddress(this.defGateway, Router.DEFAULT_PORT);
 		sendStart(dst);
 	}
 
@@ -164,6 +166,7 @@ public class Endpoint extends CommPoint {
 					online = false;
 				else if(input.contains("~")){
 					String[] parts = input.split("~");
+					System.out.println("Sending:'" + parts[1] + "' to:" + parts[0]);
 					parent.startTransmission(parts[0], parts[1]);
 				}else {
 					System.err.println("ERROR ON INPUT!!");

@@ -17,6 +17,7 @@ public class Controller extends CommPoint {
 
 	private static int NUM_OF_ROUTERS = 2;
 	public static String ID = "CONTROLLER";
+//	public static String ID = "127.0.0.1";
 	public static int COMM_PORT = 50505;
 	private RoutingTable routingTable;
 	private Map<String[], Frame> packetMap;
@@ -37,13 +38,18 @@ public class Controller extends CommPoint {
 	}
 
 	public void HELLOReceived(DatagramPacket thePacket) {
-		System.out.println("HELLO received... Adding router to active list...");
-		int theRouter = Integer.parseInt(Packet.getTgtInfo(thePacket.getData())[Packet.SENDER_ID]);
+		String RTName = Packet.getTgtInfo(thePacket.getData())[Packet.SENDER_ID];
+		System.out.println("HELLO received... Adding router to active list...  " + RTName);
+		int theRouter = Integer.parseInt(RTName);
 		activeRouters[theRouter - 1] = true;
-		Frame resFrame = new Frame(new Packet(
-				new InetSocketAddress(Router.PREFIX + Packet.getTgtInfo(thePacket.getData())[Packet.SENDER_ID],
-						Router.MGMT_PORT),
-				Packet.HELLO, -1), this.socket);
+		//******************************************
+		Frame resFrame = new Frame(
+				new Packet(new InetSocketAddress(Router.PREFIX + RTName, Router.MGMT_PORT), Packet.HELLO, -1),
+				this.socket);
+//		Frame resFrame = new Frame(
+//				new Packet(new InetSocketAddress(Controller.ID, Router.MGMT_PORT), Packet.HELLO, -1),
+//				this.socket);
+		//******************************************
 		resFrame.send();
 		resFrame.cancel();
 	}

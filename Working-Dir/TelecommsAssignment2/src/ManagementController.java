@@ -14,6 +14,7 @@ public class ManagementController extends CommPoint{
 		super(new DatagramSocket(portNum));
 		this.parent = parent;
 		MGMTMap = new HashMap<String[], Frame>();
+		this.start();
 	}
 	
 	public void sendHELLO() {
