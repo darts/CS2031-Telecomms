@@ -29,12 +29,14 @@ public class ManagementController extends CommPoint{
 	}
 	
 	public void getHELP(String senderID, String targetID) {
+		System.out.println("Asking Controller for HELP...");
 		String[] helpData = {senderID, targetID};
 		MGMTMap.put(helpData, new Frame(new Packet(MGMTAddr, Packet.HELP, helpData), socket));
 		MGMTMap.get(helpData).send();
 	}
 	
 	public void UPDATEReceived(DatagramPacket thePacket) {
+		System.out.println("UPDATE received... Adding to routing table");
 		String[] upDateData = Packet.getTgtInfo(thePacket);
 		String[] key = {upDateData[Packet.SENDER_ID], upDateData[Packet.TGT_ID]};
 		try {
@@ -48,20 +50,24 @@ public class ManagementController extends CommPoint{
 	}
 	
 	private void sendACK(String[] whatToAck) {
+		System.out.println("Sending ACK...");
 		whatToAck[Packet.ROUTER_ID_LOC] = parent.ID;
 		Frame ACKFrame = new Frame(new Packet(MGMTAddr, Packet.ACK, whatToAck), socket);
 		ACKFrame.send();
 	}
 	
 	public void ACKReceived(DatagramPacket thePacket) {
+		System.err.println("ACK received! Should not happen!");
 	}
 
 	
 	public boolean DATAReceived(DatagramPacket thePacket) {
+		System.err.println("DATA received! Should not happen!");
 		return false;
 	}
 	
-	public void HELPReceived(DatagramPacket thePacket) {		
+	public void HELPReceived(DatagramPacket thePacket) {	
+		System.err.println("HELP REQUEST received! Should not happen!");
 	}
 
 }

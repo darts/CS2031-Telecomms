@@ -158,14 +158,15 @@ public class Endpoint extends CommPoint {
 		public void run() {
 			Scanner userInputScanner = new Scanner(System.in);
 			while (online) {
-				System.out.print("Please enter a destination:");
-				String dst = userInputScanner.next();
-				if (dst.equals(QUIT))
+				System.out.print("Please enter a destination and message, separated by '~':");
+				String input = userInputScanner.nextLine();
+				if (input.equals(QUIT))
 					online = false;
-				else {
-					System.out.print("Please enter the text you would like to send:");
-					String dataToSend = userInputScanner.nextLine();
-					parent.startTransmission(dst, dataToSend);
+				else if(input.contains("~")){
+					String[] parts = input.split("~");
+					parent.startTransmission(parts[0], parts[1]);
+				}else {
+					System.err.println("ERROR ON INPUT!!");
 				}
 			}
 			userInputScanner.close();

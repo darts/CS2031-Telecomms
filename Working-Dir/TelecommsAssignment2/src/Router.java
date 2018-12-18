@@ -12,7 +12,6 @@ public class Router extends CommPoint {
 	
 	public static void main(String[] args) {
 		try {
-//			new Router(Integer.parseInt(args[0]));
 			new Router(1);
 		} catch (SocketException e) {
 			e.printStackTrace();

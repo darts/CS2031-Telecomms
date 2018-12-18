@@ -24,30 +24,41 @@ public class Controller extends CommPoint {
 
 	public Controller() throws SocketException {
 		super(new DatagramSocket(COMM_PORT));
-		initTable();
+		this.initTable();
 		packetMap = new HashMap<String[], Frame>();
 		this.start();
 	}
 
 	public void ACKReceived(DatagramPacket thePacket) {
+		System.out.println("ACK received... cancelling timeout");
 		String[] key = Packet.getTgtInfo(thePacket);
 		packetMap.get(key).cancel();
 		packetMap.remove(key);
 	}
 
 	public void HELLOReceived(DatagramPacket thePacket) {
+		System.out.println("HELLO received... Adding router to active list...");
 		int theRouter = Integer.parseInt(Packet.getTgtInfo(thePacket.getData())[Packet.SENDER_ID]);
 		activeRouters[theRouter - 1] = true;
+		Frame resFrame = new Frame(new Packet(
+				new InetSocketAddress(Router.PREFIX + Packet.getTgtInfo(thePacket.getData())[Packet.SENDER_ID],
+						Router.MGMT_PORT),
+				Packet.HELLO, -1), this.socket);
+		resFrame.send();
+		resFrame.cancel();
 	}
 
 	public boolean DATAReceived(DatagramPacket thePacket) {// Controller should not receive DATA packet
+		System.err.println("DATA received! Should not happen!");
 		return false;
 	}
 
 	public void UPDATEReceived(DatagramPacket thePacket) {// Controller should not receive this
+		System.err.println("UPDATE received! Should not happen!");
 	}
 
 	public void HELPReceived(DatagramPacket thePacket) {// A router calls for aid, controller will answer
+		System.out.println("HELP REQUEST received... Sending UPDATE");
 		String[] helpData = Packet.getTgtInfo(thePacket.getData());
 		RoutingTable.Path thePath = routingTable.getPath(helpData[Packet.TGT_ID], helpData[Packet.SENDER_ID]);
 		for (int i = 0; i < thePath.rtList.length; i++) {
