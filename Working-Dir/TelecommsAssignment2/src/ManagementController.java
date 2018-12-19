@@ -43,10 +43,10 @@ public class ManagementController extends CommPoint {
 	public void UPDATEReceived(DatagramPacket thePacket) {
 		System.out.println("UPDATE received... Adding to routing table");
 		String[] upDateData = Packet.getTgtInfo(thePacket);
-		String[] key = { upDateData[Packet.TGT_ID], upDateData[Packet.SENDER_ID] };
+		String[] key = { upDateData[Packet.SENDER_ID], upDateData[Packet.TGT_ID] };
 		System.out.println("Now Routing packets from:" + upDateData[Packet.TGT_ID] + " with dst:"
 				+ upDateData[Packet.SENDER_ID] + " to:" + upDateData[Packet.NEXT_ADDR]);
-		List<String> modKey = Arrays.asList(key[0], key[1]);
+		List<String> modKey = Arrays.asList(key[1], key[0]);
 		try {
 			MGMTMap.get(modKey).cancel();
 			MGMTMap.remove(modKey);

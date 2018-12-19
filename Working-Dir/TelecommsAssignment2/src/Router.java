@@ -26,7 +26,7 @@ public class Router extends CommPoint {
 	public static int MGMT_PORT = 50001;
 	public String ID;
 	public int rtNum;
-	private Map<List<String>, String> sendMap; // a map of where to send packets -> key = tgtID, senderID
+	private Map<List<String>, String> sendMap; // a map of where to send packets -> key = senderID, tgtID
 	private Map<List<String>, ArrayList<DatagramPacket>> waitingList;
 	private ManagementController manager;
 
@@ -103,7 +103,9 @@ public class Router extends CommPoint {
 	}
 
 	public void updateTable(String[] key, String next) {
-		List<String> modKey = Arrays.asList(key[0], key[1]);
+		List<String> modKey = Arrays.asList(key[1], key[0]);
+		System.out.println("Now Routing packets from:" + key[0] + " with dst:"
+				+ key[1] + " to:" + next);
 		sendMap.put(modKey, next);
 	}
 

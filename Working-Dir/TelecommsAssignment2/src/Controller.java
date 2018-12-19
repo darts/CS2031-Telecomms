@@ -91,15 +91,15 @@ public class Controller extends CommPoint {
 
 	private void initTable() {
 		routingTable = new RoutingTable();
-		String dst = Endpoint.PREFIX + "1"; // E1
-		String src = Endpoint.PREFIX + "2"; // E2
+		String dst = Endpoint.PREFIX + "2"; // E1
+		String src = Endpoint.PREFIX + "1"; // E2
 		String[] router = { Router.PREFIX + "2", Router.PREFIX + "1" };
 		String[] inList = { Endpoint.PREFIX + "2", Router.PREFIX + "2" };
 		String[] outList = { Router.PREFIX + "1", Endpoint.PREFIX + "1" };
 		routingTable.addPath(dst, src, router, inList, outList);
 
-		dst = Endpoint.PREFIX + "2";
-		src = Endpoint.PREFIX + "1";
+		dst = Endpoint.PREFIX + "1";
+		src = Endpoint.PREFIX + "2";
 		router = new String[] { Router.PREFIX + "1", Router.PREFIX + "2" };
 		inList = new String[] { Endpoint.PREFIX + "1", Router.PREFIX + "1" };
 		outList = new String[] { Router.PREFIX + "2", Endpoint.PREFIX + "2" };

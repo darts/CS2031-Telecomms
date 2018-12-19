@@ -55,12 +55,13 @@ public class Endpoint extends CommPoint {
 	}
 
 	public void HELLOReceived(DatagramPacket thePacket) {
+		System.out.println("HELLO Received");
 		String[] contactData = Packet.getTgtInfo(thePacket);
 		if (!connectionActive) {// not talking to anyone atm
 			if (contactData[Packet.PACKET_ID].equals(STRT_ID)) {
 //				this.tgtAddr = new InetSocketAddress(contactData[Packet.SENDER_ID],
 //						Integer.parseInt(contactData[Packet.SENDER_PORT]));
-				System.out.println(contactData[Packet.SENDER_ID]);
+//				System.out.println(contactData[Packet.SENDER_ID]);
 				this.commData = new String[] { contactData[Packet.SENDER_ID], contactData[Packet.SENDER_PORT] };
 				sendStart(contactData[Packet.SENDER_ID]);
 			} else
@@ -74,13 +75,16 @@ public class Endpoint extends CommPoint {
 	}
 
 	public boolean DATAReceived(DatagramPacket thePacket) {
+		System.out.println("DATA Received");
 		String[] contactData = Packet.getTgtInfo(thePacket);
-		if (connectionActive && expectingComms(contactData)) {// are we expecting contact
+		if(true) {
+//		if (connectionActive && expectingComms(contactData)) {// are we expecting contact
 			try {
 				this.activePacket.cancel();
 				BufferedWriter writer = new BufferedWriter(
 						new FileWriter(Integer.toString(this.transmissionFileName++)));
-				writer.write(Packet.getContents(thePacket));
+				writer.write(Packet.getContents(thePacket) + "\n");
+				writer.write(Packet.getTgtInfo(thePacket).toString());
 				writer.flush();
 				writer.close();
 				sendAck(true);
@@ -98,6 +102,7 @@ public class Endpoint extends CommPoint {
 	}
 
 	private void sendData() {
+		System.out.println("Sending DATA");
 		Packet tmp = new Packet(defGatewayAddr, this.generateDataString(commData[Packet.SENDER_ID], Packet.DATA_ID),
 				this.dataToSend);
 		activePacket = new Frame(tmp, socket);
@@ -105,6 +110,7 @@ public class Endpoint extends CommPoint {
 	}
 
 	private void sendAck(boolean timerActive) {
+		System.out.println("Sending ACK");
 		Packet tmp = new Packet(defGatewayAddr, Packet.ACK,
 				this.generateDataString(commData[Packet.SENDER_ID], Packet.DATA_ID));
 		activePacket = new Frame(tmp, socket);
@@ -128,6 +134,7 @@ public class Endpoint extends CommPoint {
 	}
 
 	private void sendStart(String dst) {
+		System.out.println("Sending STRT");
 		Packet sendPacket = new Packet(defGatewayAddr, Packet.HELLO, generateDataString(dst, Endpoint.STRT_ID));
 		this.activePacket = new Frame(sendPacket, socket);
 		this.commData = new String[] { dst, Integer.toString(DEFAULT_PORT) };
