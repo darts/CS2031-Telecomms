@@ -1,5 +1,4 @@
 import java.io.IOException;
-import java.io.Serializable;
 import java.net.DatagramPacket;
 import java.net.InetSocketAddress;
 

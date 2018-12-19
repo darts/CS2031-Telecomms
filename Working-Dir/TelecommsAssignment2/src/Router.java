@@ -4,7 +4,9 @@ import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class Router extends CommPoint {
@@ -13,6 +15,7 @@ public class Router extends CommPoint {
 	public static void main(String[] args) {
 		try {
 			new Router(Integer.parseInt(args[0]));
+//			new Router(1);
 		} catch (SocketException e) {
 			e.printStackTrace();
 		}
@@ -23,16 +26,17 @@ public class Router extends CommPoint {
 	public static int MGMT_PORT = 50001;
 	public String ID;
 	public int rtNum;
-	private Map<String[], String> sendMap; // a map of where to send packets
-	private Map<String[], ArrayList<DatagramPacket>> waitingList;
+	private Map<List<String>, String> sendMap; // a map of where to send packets
+	private Map<List<String>, ArrayList<DatagramPacket>> waitingList;
 	private ManagementController manager;
 
 	public Router(int rtNum) throws SocketException {
 		super(new DatagramSocket(DEFAULT_PORT));
-		sendMap = new HashMap<String[], String>();
-		waitingList = new HashMap<String[], ArrayList<DatagramPacket>>();
+		sendMap = new HashMap<List<String>, String>();
+		waitingList = new HashMap<List<String>, ArrayList<DatagramPacket>>();
 		this.ID = PREFIX + rtNum;
 		this.rtNum = rtNum;
+		this.start();
 		manager = new ManagementController(MGMT_PORT, this);
 		manager.sendHELLO();
 	}
@@ -65,17 +69,19 @@ public class Router extends CommPoint {
 	}
 	
 	private void addToWaitingList(String[] key, DatagramPacket thePacket) {
-		ArrayList<DatagramPacket> list = waitingList.get(key);
+		List<String> modKey = Arrays.asList(key[0], key[1]);
+		ArrayList<DatagramPacket> list = waitingList.get(modKey);
 		if(list == null)
 			list = new ArrayList<DatagramPacket>();
 		else
-			waitingList.remove(key);
+			waitingList.remove(modKey);
 		list.add(thePacket);
-		waitingList.put(key, list);
+		waitingList.put(modKey, list);
 	}
 	
 	public void sendWaiting(String[] key) {
-		ArrayList<DatagramPacket> list = waitingList.get(key);
+		List<String> modKey = Arrays.asList(key[0], key[1]);
+		ArrayList<DatagramPacket> list = waitingList.get(modKey);
 		if(list != null) {
 			for(DatagramPacket lPacket : list)
 				DATAReceived(lPacket);
@@ -87,11 +93,13 @@ public class Router extends CommPoint {
 	}
 
 	private String lookUpNext(String[] tgt) {
-		return sendMap.get(tgt);
+		List<String> modTgt = Arrays.asList(tgt[0], tgt[1]);
+		return sendMap.get(modTgt);
 	}
 
 	public void updateTable(String[] key, String next) {
-		sendMap.put(key, next);
+		List<String> modKey = Arrays.asList(key[0], key[1]);
+		sendMap.put(modKey, next);
 	}
 
 	private void forward(DatagramPacket thePacket) {

@@ -1,19 +1,26 @@
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+
 public class RoutingTable {// this is used by the controller
-	private Map<String[], Path> pathMap;
+	private Map<List<String>, Path> pathMap;
 
 	public RoutingTable() {
-		pathMap = new HashMap<String[], Path>();
+		pathMap = new HashMap<List<String>, Path>();
 	}
 
 	public void addPath(String dst, String src, String[] rtList, String[] inList, String[] outList) {
-		pathMap.put(new String[] {dst, src}, new Path(rtList, inList, outList));
+		pathMap.put(Arrays.asList(dst, src), new Path(rtList, inList, outList));
 	}
 
 	public Path getPath(String dst, String src) {
-		return pathMap.get(new String[] {dst, src});
+		return pathMap.get(Arrays.asList(dst, src));
+	}
+	
+	public boolean checkContains(String dst, String src) {
+		return pathMap.containsKey(Arrays.asList(dst, src));
 	}
 	
 	public class Path {

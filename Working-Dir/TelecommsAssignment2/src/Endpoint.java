@@ -9,12 +9,13 @@ import java.util.Scanner;
 
 public class Endpoint extends CommPoint {
 	public static String PREFIX = "E";
-	public static int DEFAULT_PORT = 50000;
+	public static int DEFAULT_PORT = 51000;
 	public static String STRT_ID = "-1";
 
 	public static void main(String[] args) {
 		try {
 			new Endpoint(Integer.parseInt(args[0]));
+//			new Endpoint(1);
 		} catch (SocketException e) {
 			e.printStackTrace();
 		}
@@ -37,6 +38,8 @@ public class Endpoint extends CommPoint {
 		dataToSend = null;
 		ID = Endpoint.PREFIX + Integer.toString(eNum);
 		defGateway = Router.PREFIX + eNum;
+//		defGateway = Router.ID;
+		this.start();
 		new UserInterface(this);
 	}
 
@@ -119,6 +122,7 @@ public class Endpoint extends CommPoint {
 	public synchronized void startTransmission(String dst, String data) {
 		dataToSend = data;// store what needs to be sent
 		this.tgtAddr = new InetSocketAddress(this.defGateway, Router.DEFAULT_PORT);
+//		this.tgtAddr = new InetSocketAddress("127.0.0.1", Router.DEFAULT_PORT);
 		sendStart(dst);
 	}
 
@@ -132,7 +136,7 @@ public class Endpoint extends CommPoint {
 
 	// this function generates the required information for a data packet
 	private String[] generateDataString(String tgtID, String seqNum) {
-		return new String[] { this.ID, Integer.toString(this.port), tgtID, Integer.toString(Endpoint.DEFAULT_PORT),
+		return new String[] { this.ID, tgtID, Integer.toString(this.port), Integer.toString(Endpoint.DEFAULT_PORT),
 				seqNum };
 	}
 
