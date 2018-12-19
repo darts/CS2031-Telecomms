@@ -9,7 +9,7 @@ public class Frame {
 	DatagramSocket theSocket;
 	Timer timeoutTimer;
 	DatagramPacket theDataPack;
-	public static final int TIMEOUT_DELAY = 2000;
+	public static final int TIMEOUT_DELAY = 5000;
 	public static final int SENT_MAX = 10; // how many times can this be resent
 	String data;
 	private int sentCounter = 0;

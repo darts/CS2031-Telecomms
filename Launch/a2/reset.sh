@@ -22,6 +22,8 @@ docker network connect cs2031 E1
 docker network connect cs2031 E2
 docker network connect cs2031 CONTROLLER
 
+cp ~/eclipse-workspace/TelecommsAssignment2/src/* //cs2031/a2/controller
+
 osascript -e 'tell application "Terminal" to do script "docker start -i CONTROLLER"'
 osascript -e 'tell application "Terminal" to do script "docker start -i R1"'
 osascript -e 'tell application "Terminal" to do script "docker start -i R2"'

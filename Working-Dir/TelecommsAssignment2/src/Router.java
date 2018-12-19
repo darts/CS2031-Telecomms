@@ -26,7 +26,7 @@ public class Router extends CommPoint {
 	public static int MGMT_PORT = 50001;
 	public String ID;
 	public int rtNum;
-	private Map<List<String>, String> sendMap; // a map of where to send packets
+	private Map<List<String>, String> sendMap; // a map of where to send packets -> key = tgtID, senderID
 	private Map<List<String>, ArrayList<DatagramPacket>> waitingList;
 	private ManagementController manager;
 
@@ -58,10 +58,13 @@ public class Router extends CommPoint {
 		} else {
 			System.out.println("DST Known... Preparing To Forward.");
 			Integer tgtPort;
-			if (next.equals(tgtData[Packet.TGT_ID]))
+			if (next.equals(tgtData[Packet.TGT_ID])) {
 				tgtPort = Integer.parseInt(tgtData[Packet.TGT_PORT]);
-			else
+				System.out.println("Sending to Endpoint:" + next);
+			}else {
 				tgtPort = Router.DEFAULT_PORT;
+				System.out.println("Sending to Router:" + next);
+			}
 			thePacket.setSocketAddress(new InetSocketAddress(next.toString(), tgtPort));
 			forward(thePacket);
 			return true;
@@ -83,8 +86,10 @@ public class Router extends CommPoint {
 		List<String> modKey = Arrays.asList(key[0], key[1]);
 		ArrayList<DatagramPacket> list = waitingList.get(modKey);
 		if(list != null) {
+			System.out.println("Sending " + list.size() + " waiting packets.");
 			for(DatagramPacket lPacket : list)
 				DATAReceived(lPacket);
+			waitingList.remove(modKey);
 		}
 	}
 

@@ -22,7 +22,7 @@ public class Controller extends CommPoint {
 //	public static String ID = "127.0.0.1";
 	public static int COMM_PORT = 50505;
 	private RoutingTable routingTable;
-	private Map<List<String>, Frame> packetMap;
+	private Map<List<String>, Frame> packetMap; //key = tgtID, senderID
 	private boolean[] activeRouters = new boolean[NUM_OF_ROUTERS];
 
 	public Controller() throws SocketException {
@@ -35,9 +35,14 @@ public class Controller extends CommPoint {
 	public void ACKReceived(DatagramPacket thePacket) {
 		System.out.println("ACK received... cancelling timeout");
 		String[] key = Packet.getTgtInfo(thePacket);
-		List<String> modKey = Arrays.asList(key[0], key[1]);
-		packetMap.get(modKey).cancel();
-		packetMap.remove(modKey);
+		List<String> modKey = Arrays.asList(key[Packet.TGT_ID], key[Packet.SENDER_ID]);
+		Frame rmFrame = packetMap.get(modKey);
+		System.out.println(packetMap.size() + " Remaining To Be ACK'd");
+		if(rmFrame != null) {
+			rmFrame.cancel();
+			packetMap.remove(modKey);
+		}else 
+			System.out.println("Not expecting a response for this key...");
 	}
 
 	public void HELLOReceived(DatagramPacket thePacket) {
@@ -75,10 +80,11 @@ public class Controller extends CommPoint {
 				String[] dataToSend = { helpData[Packet.SENDER_ID], helpData[Packet.TGT_ID], thePath.outList[i] };
 				Frame tmpFrame = new Frame(new Packet(new InetSocketAddress(thePath.rtList[i], Router.MGMT_PORT),
 						Packet.UPDATE, dataToSend), socket);
-				List<String> modKey = Arrays.asList(helpData[Packet.SENDER_ID], helpData[Packet.TGT_ID]);
+				List<String> modKey = Arrays.asList(helpData[Packet.TGT_ID], helpData[Packet.SENDER_ID]);
 				packetMap.put(modKey,
 						tmpFrame);
 				tmpFrame.send();
+				System.out.println("Router:" + thePath.rtList[i] + " TGT:"+ thePath.outList[i]);
 			}
 		}
 	}

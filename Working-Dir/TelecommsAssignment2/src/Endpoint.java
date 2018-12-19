@@ -24,12 +24,13 @@ public class Endpoint extends CommPoint {
 	private Frame activePacket;
 	private boolean connectionActive;
 	private String dataToSend;
-	private InetSocketAddress tgtAddr;
+//	private InetSocketAddress tgtAddr;
 	private String[] commData;
 	private String ID;
 	private boolean transmissionComplete;
 	private int transmissionFileName = 0;
 	private String defGateway;
+	private InetSocketAddress defGatewayAddr;
 
 	public Endpoint(int eNum) throws SocketException {
 		super(new DatagramSocket(DEFAULT_PORT));
@@ -38,6 +39,7 @@ public class Endpoint extends CommPoint {
 		dataToSend = null;
 		ID = Endpoint.PREFIX + Integer.toString(eNum);
 		defGateway = Router.PREFIX + eNum;
+		defGatewayAddr = new InetSocketAddress(defGateway, Router.DEFAULT_PORT);
 //		defGateway = Router.ID;
 		this.start();
 		new UserInterface(this);
@@ -56,8 +58,9 @@ public class Endpoint extends CommPoint {
 		String[] contactData = Packet.getTgtInfo(thePacket);
 		if (!connectionActive) {// not talking to anyone atm
 			if (contactData[Packet.PACKET_ID].equals(STRT_ID)) {
-				this.tgtAddr = new InetSocketAddress(contactData[Packet.SENDER_ID],
-						Integer.parseInt(contactData[Packet.SENDER_PORT]));
+//				this.tgtAddr = new InetSocketAddress(contactData[Packet.SENDER_ID],
+//						Integer.parseInt(contactData[Packet.SENDER_PORT]));
+				System.out.println(contactData[Packet.SENDER_ID]);
 				this.commData = new String[] { contactData[Packet.SENDER_ID], contactData[Packet.SENDER_PORT] };
 				sendStart(contactData[Packet.SENDER_ID]);
 			} else
@@ -95,14 +98,14 @@ public class Endpoint extends CommPoint {
 	}
 
 	private void sendData() {
-		Packet tmp = new Packet(this.tgtAddr, this.generateDataString(commData[Packet.SENDER_ID], Packet.DATA_ID),
+		Packet tmp = new Packet(defGatewayAddr, this.generateDataString(commData[Packet.SENDER_ID], Packet.DATA_ID),
 				this.dataToSend);
 		activePacket = new Frame(tmp, socket);
 		activePacket.send();
 	}
 
 	private void sendAck(boolean timerActive) {
-		Packet tmp = new Packet(this.tgtAddr, Packet.ACK,
+		Packet tmp = new Packet(defGatewayAddr, Packet.ACK,
 				this.generateDataString(commData[Packet.SENDER_ID], Packet.DATA_ID));
 		activePacket = new Frame(tmp, socket);
 		activePacket.send();
@@ -114,20 +117,18 @@ public class Endpoint extends CommPoint {
 
 	private boolean expectingComms(String[] contactData) {
 		if (this.commData[Packet.SENDER_ID].equals(contactData[Packet.SENDER_ID])
-				&& this.commData[Packet.SENDER_PORT].equals(contactData[Packet.SENDER_PORT]))
+				&& this.commData[1].equals(contactData[Packet.SENDER_PORT]))
 			return true;
 		return false;
 	}
 
 	public synchronized void startTransmission(String dst, String data) {
 		dataToSend = data;// store what needs to be sent
-		this.tgtAddr = new InetSocketAddress(this.defGateway, Router.DEFAULT_PORT);
-//		this.tgtAddr = new InetSocketAddress("127.0.0.1", Router.DEFAULT_PORT);
 		sendStart(dst);
 	}
 
 	private void sendStart(String dst) {
-		Packet sendPacket = new Packet(this.tgtAddr, Packet.HELLO, generateDataString(dst, Endpoint.STRT_ID));
+		Packet sendPacket = new Packet(defGatewayAddr, Packet.HELLO, generateDataString(dst, Endpoint.STRT_ID));
 		this.activePacket = new Frame(sendPacket, socket);
 		this.commData = new String[] { dst, Integer.toString(DEFAULT_PORT) };
 		this.activePacket.send();
@@ -136,7 +137,7 @@ public class Endpoint extends CommPoint {
 
 	// this function generates the required information for a data packet
 	private String[] generateDataString(String tgtID, String seqNum) {
-		return new String[] { this.ID, tgtID, Integer.toString(this.port), Integer.toString(Endpoint.DEFAULT_PORT),
+		return new String[] {this.ID, tgtID, Integer.toString(this.port), Integer.toString(Endpoint.DEFAULT_PORT),
 				seqNum };
 	}
 
@@ -145,7 +146,7 @@ public class Endpoint extends CommPoint {
 		activePacket = null;
 		connectionActive = false;
 		dataToSend = null;
-		tgtAddr = null;
+//		tgtAddr = null;
 		commData = null;
 		transmissionComplete = false;
 	}
