@@ -32,33 +32,35 @@ public class Controller extends CommPoint {
 		this.start();
 	}
 
+	//router has received update
 	public void ACKReceived(DatagramPacket thePacket) {
 		System.out.println("ACK received... cancelling timeout");
 		String[] key = Packet.getTgtInfo(thePacket);
 		List<String> modKey = Arrays.asList(key[Packet.TGT_ID], key[Packet.SENDER_ID]);
 		Frame rmFrame = packetMap.get(modKey);
 		System.out.println(packetMap.size() + " Remaining To Be ACK'd");
-		if(rmFrame != null) {
+		if(rmFrame != null) {//cancel the timeout timer
 			rmFrame.cancel();
 			packetMap.remove(modKey);
 		}else 
 			System.out.println("Not expecting a response for this key...");
 	}
 
+	//received a hello packet from router
 	public void HELLOReceived(DatagramPacket thePacket) {
 		String RTName = Packet.getTgtInfo(thePacket.getData())[Packet.SENDER_ID];
 		System.out.println("HELLO received... Adding router to active list...  " + RTName);
 		int theRouter = Integer.parseInt(RTName);
 		activeRouters[theRouter - 1] = true;
 		// ******************************************
-		Frame resFrame = new Frame(
+		Frame resFrame = new Frame(//respond to router
 				new Packet(new InetSocketAddress(Router.PREFIX + RTName, Router.MGMT_PORT), Packet.HELLO, -1),
 				this.socket);
 //		Frame resFrame = new Frame(new Packet(new InetSocketAddress(Controller.ID, Router.MGMT_PORT), Packet.HELLO, -1),
 //				this.socket);
 		// ******************************************
 		resFrame.send();
-		resFrame.cancel();
+		resFrame.cancel();//no timeout on this packet
 	}
 
 	public boolean DATAReceived(DatagramPacket thePacket) {// Controller should not receive DATA packet
@@ -72,11 +74,11 @@ public class Controller extends CommPoint {
 
 	public void HELPReceived(DatagramPacket thePacket) {// A router calls for aid, controller will answer
 		System.out.println("HELP REQUEST received... Sending UPDATE");
-		String[] helpData = Packet.getTgtInfo(thePacket.getData());
+		String[] helpData = Packet.getTgtInfo(thePacket.getData());//find out where the packet is going
 		System.out.println("Getting data for dst:src -> " + helpData[Packet.TGT_ID] + ":" + helpData[Packet.SENDER_ID]);
 		RoutingTable.Path thePath = routingTable.getPath(helpData[Packet.TGT_ID], helpData[Packet.SENDER_ID]);
-		if (thePath != null) {
-			for (int i = 0; i < thePath.rtList.length; i++) {
+		if (thePath != null) {//we know where this packet should go
+			for (int i = 0; i < thePath.rtList.length; i++) {//Send updates to all routers on path
 				String[] dataToSend = { helpData[Packet.SENDER_ID], helpData[Packet.TGT_ID], thePath.outList[i] };
 				Frame tmpFrame = new Frame(new Packet(new InetSocketAddress(thePath.rtList[i], Router.MGMT_PORT),
 						Packet.UPDATE, dataToSend), socket);
@@ -86,9 +88,11 @@ public class Controller extends CommPoint {
 				tmpFrame.send();
 				System.out.println("Router:" + thePath.rtList[i] + " TGT:"+ thePath.outList[i]);
 			}
-		}
+		}else
+			System.err.println("ERROR!! UNKNOWN DST:SRC" + helpData[Packet.TGT_ID] + ":" + helpData[Packet.SENDER_ID]);
 	}
 
+	//create some test values
 	private void initTable() {
 		routingTable = new RoutingTable();
 		String dst = Endpoint.PREFIX + "2"; // E1

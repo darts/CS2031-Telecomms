@@ -24,7 +24,6 @@ public class Endpoint extends CommPoint {
 	private Frame activePacket;
 	private boolean connectionActive;
 	private String dataToSend;
-//	private InetSocketAddress tgtAddr;
 	private String[] commData;
 	private String ID;
 	private boolean transmissionComplete;
@@ -45,11 +44,13 @@ public class Endpoint extends CommPoint {
 		new UserInterface(this);
 	}
 
+	//Acknowledgement received
 	public void ACKReceived(DatagramPacket thePacket) {
 		String[] contactData = Packet.getTgtInfo(thePacket);
+		//if we are expecting a message from this EndPoint and the data is valid
 		if (expectingComms(contactData) && contactData[Packet.PACKET_ID].equals(Packet.DATA_ID)) {
-			if (!transmissionComplete)
-				sendAck(false);
+			if (!transmissionComplete)//if we are finished communicating
+				sendAck(false);//send ACK with no timeout
 			reset();
 		}
 	}
@@ -59,9 +60,6 @@ public class Endpoint extends CommPoint {
 		String[] contactData = Packet.getTgtInfo(thePacket);
 		if (!connectionActive) {// not talking to anyone atm
 			if (contactData[Packet.PACKET_ID].equals(STRT_ID)) {
-//				this.tgtAddr = new InetSocketAddress(contactData[Packet.SENDER_ID],
-//						Integer.parseInt(contactData[Packet.SENDER_PORT]));
-//				System.out.println(contactData[Packet.SENDER_ID]);
 				this.commData = new String[] { contactData[Packet.SENDER_ID], contactData[Packet.SENDER_PORT] };
 				sendStart(contactData[Packet.SENDER_ID]);
 			} else
@@ -74,12 +72,12 @@ public class Endpoint extends CommPoint {
 		}
 	}
 
+	//data packet received 
 	public boolean DATAReceived(DatagramPacket thePacket) {
 		System.out.println("DATA Received");
 		String[] contactData = Packet.getTgtInfo(thePacket);
-		if(true) {
-//		if (connectionActive && expectingComms(contactData)) {// are we expecting contact
-			try {
+		if (connectionActive && expectingComms(contactData)) {// are we expecting contact
+			try {//write the received data to a file
 				this.activePacket.cancel();
 				BufferedWriter writer = new BufferedWriter(
 						new FileWriter(Integer.toString(this.transmissionFileName++)));
@@ -95,32 +93,38 @@ public class Endpoint extends CommPoint {
 		return true;
 	}
 
+	//ignore
 	public void UPDATEReceived(DatagramPacket thePacket) {// should not receive this packet
 	}
 
+	//ignore
 	public void HELPReceived(DatagramPacket thePacket) {// should not receive this packet
 	}
 
 	private void sendData() {
 		System.out.println("Sending DATA");
+		//create a packet to send
 		Packet tmp = new Packet(defGatewayAddr, this.generateDataString(commData[Packet.SENDER_ID], Packet.DATA_ID),
 				this.dataToSend);
 		activePacket = new Frame(tmp, socket);
-		activePacket.send();
+		activePacket.send();//send the packet
 	}
 
+	//send an ACK
 	private void sendAck(boolean timerActive) {
 		System.out.println("Sending ACK");
+		//create packet
 		Packet tmp = new Packet(defGatewayAddr, Packet.ACK,
 				this.generateDataString(commData[Packet.SENDER_ID], Packet.DATA_ID));
 		activePacket = new Frame(tmp, socket);
 		activePacket.send();
 		this.transmissionComplete = true;
-		if (!timerActive) {
+		if (!timerActive) {//cancel the timer?
 			activePacket.cancel();
 		}
 	}
 
+	//are we expecting a message from this node
 	private boolean expectingComms(String[] contactData) {
 		if (this.commData[Packet.SENDER_ID].equals(contactData[Packet.SENDER_ID])
 				&& this.commData[1].equals(contactData[Packet.SENDER_PORT]))
@@ -133,6 +137,7 @@ public class Endpoint extends CommPoint {
 		sendStart(dst);
 	}
 
+	//send a start packet
 	private void sendStart(String dst) {
 		System.out.println("Sending STRT");
 		Packet sendPacket = new Packet(defGatewayAddr, Packet.HELLO, generateDataString(dst, Endpoint.STRT_ID));
@@ -153,7 +158,6 @@ public class Endpoint extends CommPoint {
 		activePacket = null;
 		connectionActive = false;
 		dataToSend = null;
-//		tgtAddr = null;
 		commData = null;
 		transmissionComplete = false;
 	}

@@ -1,9 +1,9 @@
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 
+//Abstract class implemented by all nodes on the network
 public abstract class CommPoint extends Listener {
 	
-	//for a router
 	public CommPoint(DatagramSocket srcPort) {
 		super(srcPort);
 	}

@@ -50,26 +50,7 @@ public class Packet {
 			e.printStackTrace();
 		}
 	}
-
-//	// turn an object into a byte array
-//	private static byte[] serialize(Content data) throws IOException {
-//		try (ByteArrayOutputStream bOutStream = new ByteArrayOutputStream()) {
-//			try (ObjectOutputStream oOutStream= new ObjectOutputStream(bOutStream)) {
-//				oOutStream.writeObject(data);
-//			}
-//			return bOutStream.toByteArray();
-//		}
-//	}
-//
-//	// turn a byte array into a Content object
-//	private static Content deSerialize(byte[] data) throws IOException, ClassNotFoundException {
-//		try (ByteArrayInputStream bOutStream = new ByteArrayInputStream(data)) {
-//			try (ObjectInputStream oOutStream = new ObjectInputStream(bOutStream)) {
-//				return (Content) oOutStream.readObject();
-//			}
-//		}
-//	}
-
+	
 	// convert to a datagramPacket and set socket addr.
 	public DatagramPacket toDatagramPacket() {
 		return new DatagramPacket(contentArr, contentArr.length, targetAddr);// initialize that packet
@@ -105,10 +86,12 @@ public class Packet {
 		return -1;
 	}
 
+	//get tgtInfo from packet
 	public static String[] getTgtInfo(DatagramPacket recPack) {
 		return Packet.getTgtInfo(recPack.getData());
 	}
 
+	//get tgtInfo from packet
 	public static String[] getTgtInfo(byte[] data) {
 		try {
 			return Serializer.deserialize(data).tgtInfo;
@@ -118,11 +101,11 @@ public class Packet {
 		return null;
 	}
 
-	public static int SENDER_ID = 0;
-	public static int TGT_ID = 1;
+	public static int SENDER_ID = 0; //who sent the packet
+	public static int TGT_ID = 1; //who the packet is going to
 	public static int SENDER_PORT = 2; // what port the packet was sent from
-	public static int NEXT_ADDR = 2;
-	public static int ROUTER_ID_LOC = 2;
-	public static int TGT_PORT = 3;
-	public static int PACKET_ID = 4;
+	public static int NEXT_ADDR = 2; //next hop address
+	public static int ROUTER_ID_LOC = 2; //ID of the router sending this message
+	public static int TGT_PORT = 3; //target port
+	public static int PACKET_ID = 4; //packet number
 }
